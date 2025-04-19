@@ -4,16 +4,16 @@ from dotenv import load_dotenv
 env = "C:\\Users\\cheng\\Documents\\My Documents\\code\\hackathons\\hackdavis2025\\food-deserts\\.env.local"
 load_dotenv(env)
 
-def search_place(query, api_key):
+def find_store(query, location, max_price, api_key):
     # Base URL
     base_url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
     # Parameters in a dictionary
     params = {
         "query": query,
         "rankby": "distance",
-        "location": "37.427944,-121.913667",
-        "type": "grocery_or_supermarket|store|food|supermarket",
-        "maxprice": 1,
+        "location": location,
+        "type": "grocery_or_supermarket|food|supermarket",
+        "maxprice": max_price,
         "key": api_key,
     }
     # Send request and capture response
@@ -24,10 +24,11 @@ def search_place(query, api_key):
     else:
         return None
 
-query = input('Search query: ')
-result = search_place(query, os.getenv('GOOGLE_PLACES_API_KEY'))
-print(result)
-for store in result["results"]:
-    for property in store:
-        print(property + ": " + str(store[property]))
+if __name__ == "__main__":
+    query = input('Search query: ')
+    result = find_store(query, "37.427944,-121.913667", 1, os.getenv('GOOGLE_PLACES_API_KEY'))
+    print(result)
+    for store in result["results"]:
+        for property in store:
+            print(property + ": " + str(store[property]))
 
