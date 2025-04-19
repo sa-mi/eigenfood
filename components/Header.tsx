@@ -32,13 +32,11 @@ export default function Header({
         )}
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{title}</Text>
-          {title === "EigenFood" && (
-            <Image
-              source={require("../assets/images/diet1.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          )}
+          <Image
+            source={require("../assets/images/diet1.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
       </View>
 
