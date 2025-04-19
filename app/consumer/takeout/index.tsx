@@ -52,6 +52,9 @@ export default function Index() {
   const [priceError, setPriceError] = useState("");
   const [cuisine, setCuisine] = useState("All Cuisines");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [minCalories, setMinCalories] = useState("");
+  const [maxCalories, setMaxCalories] = useState("");
+  const [caloriesError, setCaloriesError] = useState("");
 
   // Filter address suggestions based on input
   useEffect(() => {
@@ -107,12 +110,26 @@ export default function Index() {
       return;
     }
 
+    // Validate calories range before searching
+    if (
+      minCalories &&
+      maxCalories &&
+      Number(minCalories) >= Number(maxCalories)
+    ) {
+      setCaloriesError(
+        "Maximum calories must be greater than minimum calories"
+      );
+      return;
+    }
+
     // Create search params
     const searchParams = {
       location,
       radius: parseInt(radius),
       minPrice: minPrice ? parseInt(minPrice) : undefined,
       maxPrice: maxPrice ? parseInt(maxPrice) : undefined,
+      minCalories: minCalories ? parseInt(minCalories) : undefined,
+      maxCalories: maxCalories ? parseInt(maxCalories) : undefined,
       cuisine,
     };
 
@@ -129,7 +146,7 @@ export default function Index() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.contentContainer}>
-          <Text style={styles.formTitle}>Find Healthy Food Near You</Text>
+          <Text style={styles.formTitle}>Find Healthy Takeouts Near You</Text>
 
           <View style={styles.formContainer}>
             {/* Location Input */}
@@ -236,6 +253,51 @@ export default function Index() {
               ) : null}
             </View>
 
+            {/* Calories Range */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Calories Range</Text>
+              <View style={styles.priceContainer}>
+                <TextInput
+                  style={[
+                    styles.priceInput,
+                    caloriesError ? styles.inputError : null,
+                  ]}
+                  placeholder="Min"
+                  placeholderTextColor="#999"
+                  value={minCalories}
+                  onChangeText={(text) => {
+                    // Only allow numbers
+                    if (text === "" || /^\d+$/.test(text)) {
+                      setMinCalories(text);
+                      setCaloriesError("");
+                    }
+                  }}
+                  keyboardType="numeric"
+                />
+                <Text style={styles.priceRangeSeparator}>-</Text>
+                <TextInput
+                  style={[
+                    styles.priceInput,
+                    caloriesError ? styles.inputError : null,
+                  ]}
+                  placeholder="Max"
+                  placeholderTextColor="#999"
+                  value={maxCalories}
+                  onChangeText={(text) => {
+                    // Only allow numbers
+                    if (text === "" || /^\d+$/.test(text)) {
+                      setMaxCalories(text);
+                      setCaloriesError("");
+                    }
+                  }}
+                  keyboardType="numeric"
+                />
+              </View>
+              {caloriesError ? (
+                <Text style={styles.errorText}>{caloriesError}</Text>
+              ) : null}
+            </View>
+
             {/* Cuisine Selection */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Cuisine</Text>
@@ -244,6 +306,7 @@ export default function Index() {
                   selectedValue={cuisine}
                   onValueChange={(itemValue) => setCuisine(itemValue)}
                   style={styles.picker}
+                  mode="dropdown"
                 >
                   {cuisineOptions.map((option) => (
                     <Picker.Item key={option} label={option} value={option} />
@@ -386,12 +449,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
-    backgroundColor: "#f5f5f5",
-    overflow: "hidden",
+    backgroundColor: "#fff",
+    overflow: "visible",
+    alignItems: "center",
+    justifyContent: "center",
   },
   picker: {
-    height: 50,
+    height: Platform.select({ ios: 200, android: 50 }),
     width: "100%",
+    backgroundColor: "#fff",
   },
   searchButton: {
     backgroundColor: "#4CAF50",

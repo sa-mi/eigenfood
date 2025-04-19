@@ -13,15 +13,6 @@ export default function FarmerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Farmer Dashboard</Text>
-      </View>
 
       <View style={styles.contentContainer}>
         <Text style={styles.welcomeText}>Welcome, Farmer!</Text>

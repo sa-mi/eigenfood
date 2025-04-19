@@ -135,4 +135,11 @@ const styles = StyleSheet.create({
     height: 40,
     marginLeft: 10,
   },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#2E7D32",
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+    overflow: "hidden",
+  },
 });
