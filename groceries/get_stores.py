@@ -1,8 +1,4 @@
 import requests
-import os
-from dotenv import load_dotenv
-env = "C:\\Users\\cheng\\Documents\\My Documents\\code\\hackathons\\hackdavis2025\\food-deserts\\.env.local"
-load_dotenv(env)
 
 def find_store(query, location, max_price, api_key):
     # Base URL
@@ -18,15 +14,17 @@ def find_store(query, location, max_price, api_key):
     }
     # Send request and capture response
     response = requests.get(base_url, params=params)
-    # Check if the request was successful
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return None
+
+    return response.json()
 
 if __name__ == "__main__":
+    import os
+    from dotenv import load_dotenv
+    env = "C:\\Users\\cheng\\Documents\\My Documents\\code\\hackathons\\hackdavis2025\\food-deserts\\.env.local"
+    load_dotenv(env)
+    api_key = os.getenv('GOOGLE_PLACES_API_KEY')
     query = input('Search query: ')
-    result = find_store(query, "37.427944,-121.913667", 1, os.getenv('GOOGLE_PLACES_API_KEY'))
+    result = find_store(query, "37.427944,-121.913667", 10, api_key)
     print(result)
     for store in result["results"]:
         for property in store:
