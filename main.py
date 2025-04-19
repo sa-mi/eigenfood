@@ -1,21 +1,30 @@
+import requests  # safe to use here since it's sync
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
-import httpx
+import openai
 
 load_dotenv()
 GOOGLE_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
-# NUTRI_ID   = os.getenv("NUTRITIONIX_APP_ID")
-# NUTRI_KEY  = os.getenv("NUTRITIONIX_API_KEY")
+print(GOOGLE_KEY)
+if not GOOGLE_KEY:
+    raise RuntimeError("GOOGLE_PLACES_API_KEY not loaded. Check .env file.")
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+print(OPENAI_KEY)
+if not OPENAI_KEY:
+    raise RuntimeError("OPENAI_KEY not loaded. Check .env file.")
+openai.api_key = OPENAI_KEY
 
 app = FastAPI()
+
 
 class RecRequest(BaseModel):
     lat: float
     lng: float
-    moneyBudget: float
-    calorieBudget: float
+    moneyBudget: str
+    calorieBudget: str
     maxDistance: float  # in miles
     cuisine: str
 
@@ -25,60 +34,74 @@ class RecItem(BaseModel):
     avg_price: float
     healthy_order: str
 
-@app.post("/recs", response_model=list[RecItem])
-async def get_recs(req: RecRequest):
-    # 1) Google Places nearby search
-    places_url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+def search_place(query: str, lat: float, lng: float, api_key: str):
+    base_url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
     params = {
-        "key": GOOGLE_KEY,
-        "location": f"{req.lat},{req.lng}",
-        "radius": int(req.maxDistance * 1609),  # miles→meters
+        "query": query,
+        "location": f"{lat},{lng}",
         "type": "restaurant",
-        "keyword": req.cuisine
+        "maxprice": 1,
+        "key": api_key,
     }
-    async with httpx.AsyncClient() as client:
-        gp = await client.get(places_url, params=params)
-    if gp.status_code != 200:
-        raise HTTPException(502, "Places API error")
-    results = gp.json().get("results", [])[:10]
+    response = requests.get(base_url, params=params)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+@app.post("/rest-recs", response_model=List)
+async def get_recs(req: RecRequest):
+    cuisine = req.cuisine.strip() or "restaurants"
+    query = f"{cuisine} restaurants"
+    data = search_place(query, req.lat, req.lng, GOOGLE_KEY)
+
+    if not data or "results" not in data:
+        raise HTTPException(status_code=502, detail="Google API error or no results")
+
+    places = data["results"][:10]
+    if not places:
+        print("Did not work")
+        return []
+    
+    names = []
+    for place in places:
+        names.append(place["name"])
+
+    prompt = (
+        "Suggest a healthy order or substitution under "
+        f"{int(req.calorieBudget)} calories and ${req.moneyBudget} budget for these restaurants:\n"
+        + "\n".join(f"- {name}" for name in names)
+    )
+
+    client = openai.OpenAI()
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4.1-nano",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        suggestions_text = response.choices[0].message.content
+    except Exception as e:
+        raise HTTPException(502, f"LLM error: {e}")
+
+    suggestion_lines = [line.strip("- ").strip() for line in suggestions_text.split("\n") if line.strip()]
 
     recs = []
-    # 2) For each place, query Nutritionix and pick the lowest‐cal dish under budgets
-    for place in results:
-        name    = place["name"]
-        vicinity= place.get("vicinity","")
-        # Nutritionix natural nutrients endpoint
-        nut_url = "https://trackapi.nutritionix.com/v2/natural/nutrients"
-        headers = {
-            "x-app-id":   NUTRI_ID,
-            "x-app-key":  NUTRI_KEY,
-            "Content-Type":"application/json"
-        }
-        payload = {"query": name}
-        async with httpx.AsyncClient() as client:
-            nut = await client.post(nut_url, json=payload, headers=headers)
-        if nut.status_code != 200:
-            continue
-        foods = nut.json().get("foods", [])
-        # filter by calorie budget, assume price ~$0.02 per kcal to approximate cost
-        valid = [
-          f for f in foods
-          if f["nf_calories"] <= req.calorieBudget
-             and (f["nf_calories"] * 0.02) <= req.moneyBudget
-        ]
-        if not valid:
-            continue
-        best = min(valid, key=lambda f: f["nf_calories"])
-        # average price approx:
-        avg_price = round(best["nf_calories"] * 0.02, 2)
+    for i, place in enumerate(places):
+        name = place["name"]
+        suggestion = suggestion_lines[i] if i < len(suggestion_lines) else "No suggestion"
+        lat_diff = abs(place["geometry"]["location"]["lat"] - req.lat)
+        lng_diff = abs(place["geometry"]["location"]["lng"] - req.lng)
+        approx_dist = round((lat_diff**2 + lng_diff**2)**0.5 * 69, 2)  # rough miles
 
-        # distance (already filtered by radius; we could compute precise)
         recs.append(RecItem(
             name=name,
-            distance=round(place["geometry"]["location"].get("lat",0) - req.lat, 2),  # placeholder
-            avg_price=avg_price,
-            healthy_order=f"{best['food_name']} ({int(best['nf_calories'])} kcal, ${avg_price})"
+            distance=approx_dist,
+            avg_price=req.moneyBudget,  # no real price data from Google
+            healthy_order=suggestion
         ))
+
         if len(recs) >= 5:
             break
 
