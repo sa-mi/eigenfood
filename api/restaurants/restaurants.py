@@ -1,130 +1,107 @@
-from decimal import FloatOperation
-import requests  # safe to use here since it's sync
+import os
+import requests
+import json
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
-import os
 from dotenv import load_dotenv
 from google import genai
 
-load_dotenv()
+# Load environment variables
+load_dotenv("../../.env.local")
 GOOGLE_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
-print(GOOGLE_KEY)
 if not GOOGLE_KEY:
-    raise RuntimeError("GOOGLE_PLACES_API_KEY not loaded. Check .env file.")
+    raise RuntimeError("GOOGLE_PLACES_API_KEY not loaded. Check your .env file.")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
-print(GEMINI_KEY)
 if not GEMINI_KEY:
-    raise RuntimeError("GEMINI_KEY not loaded. Check .env file.")
+    raise RuntimeError("GEMINI_API_KEY not loaded. Check your .env file.")
 
 app = FastAPI()
 
-
+# Request payload
 class RecRequest(BaseModel):
-    location: str
-    maxDistance: float  # in miles
-    cuisine: str
+    location: str           # Address or "lat,lng"
+    maxDistance: float      # in miles
+    cuisine: str            # e.g. "Mexican"
+    cals: int               # max calories per dish
+    budget: float           # max dollars per dish
 
-class RecItem(BaseModel):
+# Response payload\ n
+class RecResult(BaseModel):
     name: str
-    distance: float
-    avg_price: float
-    healthy_order: str
+    calories: str
+    price: str
+    dish: str
 
-class ItemLLM(BaseModel):
-    restaurant: str
-    cals: str
-    budget: str
 
-def search_place(query: str, lat, lng, api_key: str):
-    base_url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
-    params = {
-        "query": query,
-        "location": f"{float(lat)},{float(lng)}",
-        "type": "restaurant",
-        "maxprice": 1,
-        "key": api_key,
-    }
-    response = requests.get(base_url, params=params)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return None
 
-@app.post("/llm-rest-recs", response_model=List)
-async def get_llm_recs(req: ItemLLM):
-
-    prompt = (
-        "Suggest a healthy order or substitution under "
-        f"{req.cals if req.cals else "200-3000"} calories and ${req.budget if req.budget else "$5-$100"} budget for the restaurant: {req.restaurant}.\n Ensure the only thing listed is the healthy order or substitution with no unnecessary text. No markdown.\n"
-            )
-
-    client = genai.Client(api_key=GEMINI_KEY)
-
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-        )
-        suggestions_text = response.text
-    except Exception as e:
-        raise HTTPException(502, f"LLM error: {e}")
-
-    suggestion_lines = [line.strip("- ").strip() for line in suggestions_text.split("\n") if line.strip()]
-    print(suggestion_lines)
-    new_lst = []
-    new_lst.append(suggestions_text[:-2])
-    return new_lst
-
-@app.post("/rest-recs", response_model=List)
-async def get_recs(req: RecRequest):
-    def contains_letters(text):
-        for char in text:
-            if char.isalpha():
-                return True
-        return False
-
-    if contains_letters(req.location):
-        lat, lng = address_to_latlon(req.location)
-    else:
-        print(tuple(req.location[1:-1].split(", ")))
-        lat, lng = tuple(req.location[1:-1].split(", "))
-    cuisine = req.cuisine.strip() or "restaurants"
-    query = f"{cuisine} restaurants"
-    print(f"{float(lat)},{float(lng)}")
-    data = search_place(query, float(lat), float(lng), GOOGLE_KEY)
-
-    print(data)
-
-    if not data or "results" not in data:
-        raise HTTPException(status_code=502, detail="Google API error or no results")
-
-    places = data["results"][:10]
-    if not places:
-        print("Did not work")
-        return []
-    
-    names = []
-    for place in places:
-        names.append(place["name"])
-
-    return names
-
- 
-def address_to_latlon(address: str):
+def address_to_latlon(address: str) -> tuple[float, float]:
     url = "https://maps.googleapis.com/maps/api/geocode/json"
-    params = {
-        "address": address,
-        "key": os.getenv("GOOGLE_API_KEY")
-    }
+    params = {"address": address, "key": GOOGLE_KEY}
     resp = requests.get(url, params=params)
     resp.raise_for_status()
     data = resp.json()
-    if data["status"] != "OK":
-        raise RuntimeError(data["status"])
+    if data.get("status") != "OK":
+        raise HTTPException(400, f"Geocode error: {data.get('status')}")
     loc = data["results"][0]["geometry"]["location"]
-    return tuple([loc["lat"], loc["lng"]])
+    return loc["lat"], loc["lng"]
 
-# lat, lon = address_to_latlon("1600 Amphitheatre Pkwy, Mountain View, CA")
-# print(lat, lon)
+
+def search_place(query: str, lat: float, lng: float, radius: int, api_key: str) -> list:
+    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+    params = {
+        "location": f"{lat},{lng}",
+        "radius": radius,
+        "type": "restaurant",
+        "keyword": query,
+        "maxprice": 1,
+        "key": api_key,
+    }
+    resp = requests.get(url, params=params)
+    resp.raise_for_status()
+    return resp.json().get("results", [])
+
+@app.post("/recs", response_model=List[RecResult])
+def recs(req: RecRequest) -> List[RecResult]:
+    # Determine coordinates
+    if any(c.isalpha() for c in req.location):
+        lat, lng = address_to_latlon(req.location)
+    else:
+        lat, lng = map(float, req.location.split(","))
+
+    # Search for restaurants
+    radius_m = int(req.maxDistance * 1609)
+    places = search_place(f"{req.cuisine} restaurants", lat, lng, radius_m, GOOGLE_KEY)
+
+    if not places:
+        return []
+
+    results: List[RecResult] = []
+    # Limit to first 3 restaurants
+    for place in places[:3]:
+        name = place.get("name")
+        # Get three healthy options
+        orders = get_healthy_orders(name, req.cals, req.budget)
+        results.append(RecResult(name=name, calories=orders[0], price=orders[1], dish=orders[2]))
+        results.append(RecResult(name=name, calories=orders[3], price=orders[4], dish=orders[5]))
+        results.append(RecResult(name=name, calories=orders[6], price=orders[7], dish=orders[8]))
+
+    return results
+
+def get_healthy_orders(restaurant: str, cals: int, budget: float) -> List[str]:
+    """Use Gemini to suggest three healthy menu items or substitutions."""
+    prompt = (
+        f"For the restaurant {restaurant}, suggest three healthy menu items or substitutions "
+        f"under {cals} calories and ${budget} budget. Strictly give the output in the format 'calories1, price1, dish1, calories2, price2, dish2, ...'. Only include commas in the output. No extra text."
+    )
+    client = genai.Client(api_key=GEMINI_KEY)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt
+    )
+    text = response.text.strip()
+
+    suggestions = text.split(", ")
+    return suggestions
+
 
