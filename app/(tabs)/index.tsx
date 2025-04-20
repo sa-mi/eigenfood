@@ -198,48 +198,6 @@ export default function Index() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Top Location Bar */}
-        <View style={styles.topLocationBar}>
-          <View style={styles.locationInputContainer}>
-            <TextInput
-              style={styles.locationInput}
-              placeholder="Enter your location"
-              value={location}
-              onChangeText={setLocation}
-              onFocus={() => location.length > 2 && setShowSuggestions(true)}
-            />
-            <TouchableOpacity
-              style={styles.locationButton}
-              onPress={handleGetCurrentLocation}
-              disabled={isLoadingLocation}
-            >
-              {isLoadingLocation ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <MaterialIcons name="my-location" size={16} color="#fff" />
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {showSuggestions && (
-            <View style={styles.suggestionsContainer}>
-              <FlatList
-                data={addressSuggestions}
-                keyExtractor={(item) => item}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.suggestionItem}
-                    onPress={() => handleLocationSelect(item)}
-                  >
-                    <Text style={styles.suggestionText}>{item}</Text>
-                  </TouchableOpacity>
-                )}
-                style={styles.suggestionsList}
-              />
-            </View>
-          )}
-        </View>
-
         {/* Banner with Logo and Motto */}
         <View style={styles.heroSection}>
           <ImageBackground
@@ -253,10 +211,11 @@ export default function Index() {
                 <Image
                   source={require("../../assets/images/diet1.png")}
                   style={styles.headerImage}
-                  resizeMode="contain"
                 />
               </View>
-              <Text style={styles.subtitle}>Healthier choices, anywhere</Text>
+              <Text style={styles.subtitle}>
+                Discover nutritious options nearby
+              </Text>
             </View>
           </ImageBackground>
         </View>
@@ -268,8 +227,8 @@ export default function Index() {
             style={styles.filterButton}
             onPress={toggleFilterBar}
           >
-            <MaterialIcons name="filter-list" size={18} color="#fff" />
-            <Text style={styles.buttonText}>Filters</Text>
+            <MaterialIcons name="tune" size={18} color="#fff" />
+            <Text style={{ color: "#fff", marginLeft: 5 }}>Filter Options</Text>
           </TouchableOpacity>
 
           {/* Toggle Switcher */}
@@ -320,33 +279,31 @@ export default function Index() {
           </View>
         </View>
 
-        {/* Filter Bar */}
         <View
           style={[
             styles.filterBarContainer,
-            !filterVisible && styles.filterBarHidden,
+            filterVisible ? null : styles.filterBarHidden,
           ]}
         >
           <View style={styles.filterSection}>
-            {/* Radius Slider */}
             <View style={styles.filterItem}>
-              <Text style={styles.filterLabel}>Distance: {radius} miles</Text>
+              <Text style={styles.filterLabel}>Search Radius</Text>
               <Slider
                 style={styles.slider}
                 minimumValue={1}
-                maximumValue={50}
+                maximumValue={25}
                 step={1}
                 value={radius}
                 onValueChange={setRadius}
                 minimumTrackTintColor="#4CAF50"
-                maximumTrackTintColor="#ccc"
+                maximumTrackTintColor="#d3d3d3"
                 thumbTintColor="#2E7D32"
               />
+              <Text>{radius} miles</Text>
             </View>
 
-            {/* Cuisine Picker */}
             <View style={styles.filterItem}>
-              <Text style={styles.filterLabel}>Cuisine</Text>
+              <Text style={styles.filterLabel}>Cuisine Type</Text>
               <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={cuisine}
@@ -360,10 +317,9 @@ export default function Index() {
               </View>
             </View>
 
-            {/* Price Range Slider - Only Max Price */}
             <View style={styles.filterItem}>
               <Text style={styles.filterLabel}>
-                Maximum Price: ${priceRange[1]}
+                Price Range: ${priceRange[0]} - ${priceRange[1]}
               </Text>
               <Slider
                 style={styles.slider}
@@ -373,15 +329,14 @@ export default function Index() {
                 value={priceRange[1]}
                 onValueChange={(value) => setPriceRange([0, value])}
                 minimumTrackTintColor="#4CAF50"
-                maximumTrackTintColor="#ccc"
+                maximumTrackTintColor="#d3d3d3"
                 thumbTintColor="#2E7D32"
               />
             </View>
 
-            {/* Calories - Max Only */}
             <View style={styles.filterItem}>
               <Text style={styles.filterLabel}>
-                Maximum Calories: {maxCalories}
+                Max Calories: {maxCalories} cal
               </Text>
               <Slider
                 style={styles.slider}
@@ -389,27 +344,22 @@ export default function Index() {
                 maximumValue={2000}
                 step={50}
                 value={maxCalories}
-                onValueChange={(value) => setMaxCalories(value)}
+                onValueChange={setMaxCalories}
                 minimumTrackTintColor="#4CAF50"
-                maximumTrackTintColor="#ccc"
+                maximumTrackTintColor="#d3d3d3"
                 thumbTintColor="#2E7D32"
               />
             </View>
 
-            {/* Apply Button */}
             <TouchableOpacity
               style={styles.applyButton}
-              onPress={() => {
-                // Apply filters and close filter section
-                setFilterVisible(false);
-              }}
+              onPress={toggleFilterBar}
             >
               <Text style={styles.applyButtonText}>Apply Filters</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Restaurant/Grocery List based on toggle */}
         <View style={styles.listContainer}>
           {showRestaurants ? (
             <RestaurantList
@@ -542,16 +492,17 @@ const styles = StyleSheet.create({
   },
   locationInput: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 14,
     height: 40,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
   },
   locationButton: {
-    backgroundColor: "#4CAF50",
     height: 40,
     width: 40,
+    backgroundColor: "#4CAF50",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
@@ -559,139 +510,91 @@ const styles = StyleSheet.create({
   },
   suggestionsContainer: {
     position: "absolute",
-    top: 40,
+    top: 50,
     left: 0,
     right: 0,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#eee",
+    borderRadius: 8,
     zIndex: 1000,
-  },
-  suggestionsList: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    maxHeight: 120,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  suggestionItem: {
-    padding: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  suggestionText: {
-    fontSize: 14,
-  },
-  slider: {
-    width: "100%",
-    height: 40,
-    marginVertical: 6,
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    marginVertical: 8,
-    height: Platform.OS === "ios" ? 150 : 45,
-  },
-  picker: {
-    width: "100%",
-    backgroundColor: "#fff",
-    height: Platform.OS === "ios" ? 150 : 45,
-  },
-  rangeSliderContainer: {
-    width: "100%",
-    marginVertical: 8,
-  },
-  rangeSlider: {
-    width: "100%",
-    height: 40,
-    marginBottom: 8,
-  },
-  rangeLabel: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#2E7D32",
-  },
-  searchButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  searchButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  welcomeSection: {
-    padding: 24,
-    backgroundColor: "#E8F5E9",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    marginTop: -30,
-    alignItems: "center",
-  },
-  cardImageContainer: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 24,
-    shadowColor: "#2E7D32",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: "rgba(76, 175, 80, 0.3)",
-  },
-  cardImage: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    opacity: 0.9,
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  descriptionText: {
-    fontSize: 16,
-    color: "#555",
-    textAlign: "center",
-    marginBottom: 32,
-    lineHeight: 22,
-  },
-  actionButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    borderRadius: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
   },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "white",
+  suggestionsList: {
+    maxHeight: 200,
   },
-  topLocationBar: {
-    backgroundColor: "#fff",
-    padding: 10,
+  suggestionItem: {
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
-    zIndex: 1000,
+  },
+  suggestionText: {
+    fontSize: 14,
+  },
+  toggleBarContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  toggleBar: {
+    flexDirection: "row",
+    backgroundColor: "#F0F0F0",
+    borderRadius: 28,
+    padding: 4,
+  },
+  toggleButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 24,
+  },
+  toggleText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: "#888",
+  },
+  toggleActive: {
+    backgroundColor: "#4CAF50",
+  },
+  toggleTextActive: {
+    color: "#fff",
+    fontWeight: "500",
+  },
+  slider: {
+    width: "100%",
+    height: 40,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    backgroundColor: "#F8F8F8",
+    overflow: "hidden",
+  },
+  picker: {
+    height: 40,
+    width: "100%",
+  },
+  applyButton: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  applyButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  listContainer: {
+    flex: 1,
   },
   actionButtonsContainer: {
     flexDirection: "column",
@@ -716,31 +619,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#4CAF50",
     overflow: "hidden",
-  },
-  toggleButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    backgroundColor: "#fff",
-  },
-  toggleActive: {
-    backgroundColor: "#4CAF50",
-  },
-  toggleText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#4CAF50",
-    marginLeft: 6,
-  },
-  toggleTextActive: {
-    color: "#fff",
-  },
-  listContainer: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingBottom: 20,
   },
   listView: {
     padding: 15,
@@ -791,18 +669,5 @@ const styles = StyleSheet.create({
   },
   caloriesContainer: {
     marginVertical: 5,
-  },
-  applyButton: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  applyButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
   },
 });
