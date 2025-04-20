@@ -49,6 +49,12 @@ def search_place(query: str, lat: float, lng: float, api_key: str):
     else:
         return None
 
+@app.post("/llm-rest-recs", response_model=List)
+async def get_llm_recs(req: RecRequest):
+    restaurant = req[0]
+
+
+
 @app.post("/rest-recs", response_model=List)
 async def get_recs(req: RecRequest):
     cuisine = req.cuisine.strip() or "restaurants"
@@ -86,6 +92,24 @@ async def get_recs(req: RecRequest):
         raise HTTPException(502, f"LLM error: {e}")
 
     suggestion_lines = [line.strip("- ").strip() for line in suggestions_text.split("\n") if line.strip()]
+    print(suggestion_lines)
+    # recs = []
+    # for i, place in enumerate(places):
+    #     name = place["name"]
+    #     suggestion = suggestion_lines[i] if i < len(suggestion_lines) else "No suggestion"
+    #     lat_diff = abs(place["geometry"]["location"]["lat"] - req.lat)
+    #     lng_diff = abs(place["geometry"]["location"]["lng"] - req.lng)
+    #     approx_dist = round((lat_diff**2 + lng_diff**2)**0.5 * 69, 2)  # rough miles
+    #
+    #     recs.append(RecItem(
+    #         name=name,
+    #         distance=approx_dist,
+    #         avg_price=req.moneyBudget,  # no real price data from Google
+    #         healthy_order=suggestion
+    #     ))
+    #
+    #     if len(recs) >= 5:
+    #         break
 
     recs = []
     for i, place in enumerate(places):
@@ -106,7 +130,6 @@ async def get_recs(req: RecRequest):
             break
 
     return recs
-import os, requests
 
 def address_to_latlon(address: str):
     url = "https://maps.googleapis.com/maps/api/geocode/json"
