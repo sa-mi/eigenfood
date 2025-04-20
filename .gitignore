@@ -1,11 +1,6 @@
-.env.local
-
-__pycache__/
-
 HackDavis/
-__pycache__/
+
 .venv/
-.env.local
 
 # Native
 *.orig.*
@@ -38,3 +33,9 @@ app-example
 __pycache__/
 
 argon-react-native-master/
+
+node_modules/
+
+expo-env.d.tsbuildinfo
+
+ios/
