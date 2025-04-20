@@ -58,7 +58,7 @@ async def get_llm_recs(req: ItemLLM):
 
     prompt = (
         "Suggest a healthy order or substitution under "
-        f"{req.cals if req.cals else "200-3000"} calories and ${req.budget if req.budget else "$5-$100"} budget for the restaurant: {req.restaurant}.\n Ensure the only thing listed is the healthy order or substitution with no unnecessary text.\n"
+        f"{req.cals if req.cals else "200-3000"} calories and ${req.budget if req.budget else "$5-$100"} budget for the restaurant: {req.restaurant}.\n Ensure the only thing listed is the healthy order or substitution with no unnecessary text. No markdown.\n"
             )
 
     client = genai.Client(api_key=GEMINI_KEY)
@@ -66,16 +66,16 @@ async def get_llm_recs(req: ItemLLM):
     try:
         response = client.models.generate_content(
             model="gemini-2.0-flash",
-            contents=prompt
+            contents=prompt,
         )
-        suggestions_text = response.choices[0].message.content
+        suggestions_text = response.text
     except Exception as e:
         raise HTTPException(502, f"LLM error: {e}")
 
     suggestion_lines = [line.strip("- ").strip() for line in suggestions_text.split("\n") if line.strip()]
     print(suggestion_lines)
     new_lst = []
-    new_lst.append(suggestions_text)
+    new_lst.append(suggestions_text[:-2])
     return new_lst
 
 @app.post("/rest-recs", response_model=List)
