@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from google import genai
 from typing import List, Dict
 import re
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # Load environment variables
@@ -21,6 +22,18 @@ if not GEMINI_KEY:
 
 app = FastAPI()
 
+origins = [
+    "http://localhost:8081",
+    # add any other origins you need, e.g. your mobile dev-client URL
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,            # or ["*"] to allow all
+    allow_credentials=True,
+    allow_methods=["*"],              # GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],              # Authorization, Content-Type, etc.
+)
 
 
 def address_to_latlon(address: str) -> tuple[float, float]:
@@ -98,7 +111,6 @@ def generate_recipes(cuisine: str, store_info: Dict, budget: float) -> str:
     Queries OpenAI GPT to generate 5 recipes of the given cuisine
     using approximate ingredient costs within the specified budget.
     """
-    openai.api_key = os.getenv("OPENAI_API_KEY")
     prompt = (
         f"You are a helpful chef assistant.\n"
         f"Given the grocery store '{store_info['name']}' at '{store_info['address']}', "
@@ -187,8 +199,9 @@ Constraints:
 
 For each restaurant, suggest exactly one healthy menu item or substitution under those constraints.
 
-🔔 Output ONLY CSV lines, one per restaurant, in this exact format:
+Output ONLY CSV lines, one per restaurant, in this exact format:
 restaurant_name,dish_name,calories,price
+No price is free or over 100 dollars. 
 """
     client = genai.Client(api_key=GEMINI_KEY)
     resp = client.models.generate_content(
@@ -219,22 +232,24 @@ def recs(req: RecRequest) -> List[RecResult]:
     restaurant_names = [p.get("name") for p in places[:3]]
     csv_text = get_healthy_orders(restaurant_names, req.cals, req.budget)
 
+    
     # Parse CSV lines
-    lines = [line.strip() for line in csv_text.split("\n") if line.strip()]
-    if len(lines) != len(restaurant_names):
-        raise HTTPException(
-            502,
-            detail=f"Expected {len(restaurant_names)} lines, got {len(lines)}: {lines}"
-        )
+    lines = [line.strip() for line in csv_text.splitlines() if line.strip()]
+    # No exceptions: pad/truncate lines to expected count
+    expected = len(restaurant_names)
+    if len(lines) < expected:
+        lines += [""] * (expected - len(lines))
+    elif len(lines) > expected:
+        lines = lines[:expected]
 
     results: List[RecResult] = []
     for line in lines:
         parts = [p.strip() for p in line.split(",")]
-        if len(parts) != 4:
-            raise HTTPException(
-                502,
-                detail=f"Invalid CSV format: '{line}'"
-            )
+        # pad/truncate parts to exactly 4 fields
+        if len(parts) < 4:
+            parts += [""] * (4 - len(parts))
+        elif len(parts) > 4:
+            parts = parts[:4]
         name, dish, calories, price = parts
         results.append(RecResult(name=name, dish=dish, calories=calories, price=price))
 
