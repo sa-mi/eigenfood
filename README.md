@@ -3,7 +3,7 @@ EigenFood is a mobile app built to support individuals living in food deserts—
 
 Users simply input their preferences such as location, cuisine, budget, and dietary goals. The app then returns a list of nearby restaurants that match those needs, along with healthy meal suggestions or substitutions tailored to each menu.
 
-## Video Demo
+## GIF Demo
 
 ![eigenfood-demo-ezgif com-speed](https://github.com/user-attachments/assets/df597f76-2381-4eb8-a17b-8e9ab80a9a57)
 
