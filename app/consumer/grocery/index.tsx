@@ -15,7 +15,6 @@ import { useRouter } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
-import { request, PERMISSIONS, RESULTS } from "react-native-permissions";
 
 // Mock data for address suggestions (replace with real API)
 const mockAddresses = [
@@ -56,13 +55,6 @@ export default function Index() {
   const [minCalories, setMinCalories] = useState("");
   const [maxCalories, setMaxCalories] = useState("");
   const [caloriesError, setCaloriesError] = useState("");
-  const [locationError, setLocationError] = useState("");
-  const [radiusError, setRadiusError] = useState("");
-  const [minPriceError, setMinPriceError] = useState("");
-  const [maxPriceError, setMaxPriceError] = useState("");
-  const [minCaloriesError, setMinCaloriesError] = useState("");
-  const [maxCaloriesError, setMaxCaloriesError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
   // Filter address suggestions based on input
   useEffect(() => {
@@ -86,7 +78,6 @@ export default function Index() {
     setIsLoadingLocation(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      console.log("status", status);
 
       if (status !== "granted") {
         alert("Permission to access location was denied");
@@ -99,7 +90,9 @@ export default function Index() {
 
       // Reverse geocode to get address (in a real app)
       // For now, just display coordinates
-      setLocation(`(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+      setLocation(
+        `(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
+      );
     } catch (error) {
       console.error("Error getting location:", error);
       alert(
@@ -110,81 +103,14 @@ export default function Index() {
     }
   };
 
-  const validateForm = () => {
-    let isValid = true;
-
-    // Reset all error messages
-    setLocationError("");
-    setRadiusError("");
-    setMinPriceError("");
-    setMaxPriceError("");
-    setPriceError("");
-    setMinCaloriesError("");
-    setMaxCaloriesError("");
-    setCaloriesError("");
-
-    // Validate location (required)
-    if (!location.trim()) {
-      setLocationError("Location is required");
-      isValid = false;
-    }
-
-    // Validate radius (required and must be integer)
-    if (!radius.trim()) {
-      setRadiusError("Search radius is required");
-      isValid = false;
-    } else if (!Number.isInteger(Number(radius)) || Number(radius) <= 0) {
-      setRadiusError("Radius must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate price range (required and must be integers)
-    if (!minPrice.trim()) {
-      setMinPriceError("Minimum price is required");
-      isValid = false;
-    } else if (!Number.isInteger(Number(minPrice)) || Number(minPrice) < 0) {
-      setMinPriceError("Must be a non-negative integer");
-      isValid = false;
-    }
-
-    if (!maxPrice.trim()) {
-      setMaxPriceError("Maximum price is required");
-      isValid = false;
-    } else if (!Number.isInteger(Number(maxPrice)) || Number(maxPrice) <= 0) {
-      setMaxPriceError("Must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate min price is less than max price
+  const handleSearch = () => {
+    // Validate price range before searching
     if (minPrice && maxPrice && Number(minPrice) >= Number(maxPrice)) {
       setPriceError("Maximum price must be greater than minimum price");
-      isValid = false;
+      return;
     }
 
-    // Validate calories range (required and must be integers)
-    if (!minCalories.trim()) {
-      setMinCaloriesError("Minimum calories is required");
-      isValid = false;
-    } else if (
-      !Number.isInteger(Number(minCalories)) ||
-      Number(minCalories) < 0
-    ) {
-      setMinCaloriesError("Must be a non-negative integer");
-      isValid = false;
-    }
-
-    if (!maxCalories.trim()) {
-      setMaxCaloriesError("Maximum calories is required");
-      isValid = false;
-    } else if (
-      !Number.isInteger(Number(maxCalories)) ||
-      Number(maxCalories) <= 0
-    ) {
-      setMaxCaloriesError("Must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate min calories is less than max calories
+    // Validate calories range before searching
     if (
       minCalories &&
       maxCalories &&
@@ -193,61 +119,27 @@ export default function Index() {
       setCaloriesError(
         "Maximum calories must be greater than minimum calories"
       );
-      isValid = false;
-    }
-
-    return isValid;
-  };
-
-  const handleSearch = async () => {
-    // Run validation
-    if (!validateForm()) {
       return;
     }
 
-    // Set loading state while fetching data
-    setIsLoading(true);
+    // Create search params
+    const searchParams = {
+      location,
+      radius: radius ? parseInt(radius) : 5,
+      minPrice: minPrice ? parseInt(minPrice) : undefined,
+      maxPrice: maxPrice ? parseInt(maxPrice) : undefined,
+      minCalories: minCalories ? parseInt(minCalories) : undefined,
+      maxCalories: maxCalories ? parseInt(maxCalories) : undefined,
+      cuisine,
+    };
 
-    try {
-      // Create search params
-      const searchParams = {
-        location,
-        radius: parseInt(radius),
-        minPrice: parseInt(minPrice),
-        maxPrice: parseInt(maxPrice),
-        minCalories: parseInt(minCalories),
-        maxCalories: parseInt(maxCalories),
-        cuisine: cuisine !== "All Cuisines" ? cuisine : undefined,
-      };
+    console.log("Searching with params:", searchParams);
 
-      // Call your API endpoint with the search parameters
-      const response = await fetch("YOUR_API_ENDPOINT_URL", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(searchParams),
-      });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      const data = await response.json();
-
-      // Navigate to results page with the fetched data
-      router.push({
-        pathname: "/consumer/grocery/results",
-        params: {
-          resultsData: JSON.stringify(data),
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching search results:", error);
-      alert("Failed to fetch results. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    // Navigate to results page with params
+    router.push({
+      pathname: "/consumer",
+      params: searchParams,
+    });
   };
 
   return (
@@ -262,17 +154,11 @@ export default function Index() {
               <Text style={styles.inputLabel}>Location</Text>
               <View style={styles.locationInputContainer}>
                 <TextInput
-                  style={[
-                    styles.locationInput,
-                    locationError ? styles.inputError : null,
-                  ]}
+                  style={styles.locationInput}
                   placeholder="Enter your location"
                   placeholderTextColor="#999"
                   value={location}
-                  onChangeText={(text) => {
-                    setLocation(text);
-                    setLocationError("");
-                  }}
+                  onChangeText={setLocation}
                   onFocus={() =>
                     location.length > 2 && setShowSuggestions(true)
                   }
@@ -289,9 +175,6 @@ export default function Index() {
                   )}
                 </TouchableOpacity>
               </View>
-              {locationError ? (
-                <Text style={styles.errorText}>{locationError}</Text>
-              ) : null}
 
               {showSuggestions && (
                 <View style={styles.suggestionsContainer}>
@@ -316,24 +199,13 @@ export default function Index() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Search Radius (miles)</Text>
               <TextInput
-                style={[
-                  styles.textInput,
-                  radiusError ? styles.inputError : null,
-                ]}
+                style={styles.textInput}
                 placeholder="5"
                 placeholderTextColor="#999"
                 value={radius}
-                onChangeText={(text) => {
-                  if (text === "" || /^\d+$/.test(text)) {
-                    setRadius(text);
-                    setRadiusError("");
-                  }
-                }}
+                onChangeText={setRadius}
                 keyboardType="numeric"
               />
-              {radiusError ? (
-                <Text style={styles.errorText}>{radiusError}</Text>
-              ) : null}
             </View>
 
             {/* Price Range */}
@@ -343,7 +215,7 @@ export default function Index() {
                 <TextInput
                   style={[
                     styles.priceInput,
-                    minPriceError || priceError ? styles.inputError : null,
+                    priceError ? styles.inputError : null,
                   ]}
                   placeholder="Min"
                   placeholderTextColor="#999"
@@ -352,7 +224,6 @@ export default function Index() {
                     // Only allow numbers
                     if (text === "" || /^\d+$/.test(text)) {
                       setMinPrice(text);
-                      setMinPriceError("");
                       setPriceError("");
                     }
                   }}
@@ -362,7 +233,7 @@ export default function Index() {
                 <TextInput
                   style={[
                     styles.priceInput,
-                    maxPriceError || priceError ? styles.inputError : null,
+                    priceError ? styles.inputError : null,
                   ]}
                   placeholder="Max"
                   placeholderTextColor="#999"
@@ -371,18 +242,13 @@ export default function Index() {
                     // Only allow numbers
                     if (text === "" || /^\d+$/.test(text)) {
                       setMaxPrice(text);
-                      setMaxPriceError("");
                       setPriceError("");
                     }
                   }}
                   keyboardType="numeric"
                 />
               </View>
-              {minPriceError ? (
-                <Text style={styles.errorText}>{minPriceError}</Text>
-              ) : maxPriceError ? (
-                <Text style={styles.errorText}>{maxPriceError}</Text>
-              ) : priceError ? (
+              {priceError ? (
                 <Text style={styles.errorText}>{priceError}</Text>
               ) : null}
             </View>
@@ -394,9 +260,7 @@ export default function Index() {
                 <TextInput
                   style={[
                     styles.priceInput,
-                    minCaloriesError || caloriesError
-                      ? styles.inputError
-                      : null,
+                    caloriesError ? styles.inputError : null,
                   ]}
                   placeholder="Min"
                   placeholderTextColor="#999"
@@ -405,7 +269,6 @@ export default function Index() {
                     // Only allow numbers
                     if (text === "" || /^\d+$/.test(text)) {
                       setMinCalories(text);
-                      setMinCaloriesError("");
                       setCaloriesError("");
                     }
                   }}
@@ -415,9 +278,7 @@ export default function Index() {
                 <TextInput
                   style={[
                     styles.priceInput,
-                    maxCaloriesError || caloriesError
-                      ? styles.inputError
-                      : null,
+                    caloriesError ? styles.inputError : null,
                   ]}
                   placeholder="Max"
                   placeholderTextColor="#999"
@@ -426,18 +287,13 @@ export default function Index() {
                     // Only allow numbers
                     if (text === "" || /^\d+$/.test(text)) {
                       setMaxCalories(text);
-                      setMaxCaloriesError("");
                       setCaloriesError("");
                     }
                   }}
                   keyboardType="numeric"
                 />
               </View>
-              {minCaloriesError ? (
-                <Text style={styles.errorText}>{minCaloriesError}</Text>
-              ) : maxCaloriesError ? (
-                <Text style={styles.errorText}>{maxCaloriesError}</Text>
-              ) : caloriesError ? (
+              {caloriesError ? (
                 <Text style={styles.errorText}>{caloriesError}</Text>
               ) : null}
             </View>
@@ -460,17 +316,10 @@ export default function Index() {
 
             {/* Search Button */}
             <TouchableOpacity
-              style={[styles.searchButton, isLoading && styles.disabledButton]}
+              style={styles.searchButton}
               onPress={handleSearch}
-              disabled={isLoading}
             >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.searchButtonText}>
-                  Find Healthy Options
-                </Text>
-              )}
+              <Text style={styles.searchButtonText}>Find Healthy Options</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -620,9 +469,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
-  },
-  disabledButton: {
-    backgroundColor: "#A5D6A7",
-    opacity: 0.7,
   },
 });

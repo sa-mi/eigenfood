@@ -9,16 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.hackdavis.eigenfood",
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Allow this app to access your location so we can show nearby grocery options.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow this app to access your location even in the background to keep recommendations up to date.",
-        "UIBackgroundModes": [
-          "location"
-        ],
-        "ITSAppUsesNonExemptEncryption": false
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -41,24 +32,10 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ],
-      [
-        "react-native-permissions",
-        {
-          "locationWhenInUse": "Location is used to find grocery stores and restaurants near you"
-        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "router": {
-        "origin": false
-      },
-      "eas": {
-        "projectId": "b46c1c39-b8a9-40c5-85df-0dc23bcc4f79"
-      }
     }
   }
 }

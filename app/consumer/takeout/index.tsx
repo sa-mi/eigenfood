@@ -55,13 +55,13 @@ export default function Index() {
   const [minCalories, setMinCalories] = useState("");
   const [maxCalories, setMaxCalories] = useState("");
   const [caloriesError, setCaloriesError] = useState("");
-  const [locationError, setLocationError] = useState("");
-  const [radiusError, setRadiusError] = useState("");
-  const [minPriceError, setMinPriceError] = useState("");
-  const [maxPriceError, setMaxPriceError] = useState("");
-  const [minCaloriesError, setMinCaloriesError] = useState("");
-  const [maxCaloriesError, setMaxCaloriesError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    location: "",
+    radius: "",
+    price: "",
+    calories: "",
+    cuisine: "",
+  });
 
   // Filter address suggestions based on input
   useEffect(() => {
@@ -97,9 +97,7 @@ export default function Index() {
 
       // Reverse geocode to get address (in a real app)
       // For now, just display coordinates
-      setLocation(
-        `(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
-      );
+      setLocation(`(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
     } catch (error) {
       console.error("Error getting location:", error);
       alert(
@@ -110,22 +108,78 @@ export default function Index() {
     }
   };
 
-  const handleSearch = () => {
-    // Validate price range before searching
-    if (minPrice && maxPrice && Number(minPrice) >= Number(maxPrice)) {
-      setPriceError("Maximum price must be greater than minimum price");
-      return;
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {
+      location: "",
+      radius: "",
+      price: "",
+      calories: "",
+      cuisine: "",
+    };
+
+    // Location validation
+    if (!location.trim()) {
+      newErrors.location = "Location is required";
+      isValid = false;
     }
 
-    // Validate calories range before searching
-    if (
-      minCalories &&
-      maxCalories &&
-      Number(minCalories) >= Number(maxCalories)
-    ) {
-      setCaloriesError(
-        "Maximum calories must be greater than minimum calories"
-      );
+    // Radius validation
+    if (!radius) {
+      newErrors.radius = "Search radius is required";
+      isValid = false;
+    } else if (!Number.isInteger(Number(radius)) || Number(radius) <= 0) {
+      newErrors.radius = "Radius must be a positive integer";
+      isValid = false;
+    }
+
+    // Price range validation
+    if ((!minPrice && maxPrice) || (minPrice && !maxPrice)) {
+      newErrors.price = "Both minimum and maximum prices are required";
+      isValid = false;
+    } else if (minPrice && maxPrice) {
+      if (
+        !Number.isInteger(Number(minPrice)) ||
+        !Number.isInteger(Number(maxPrice))
+      ) {
+        newErrors.price = "Prices must be integers";
+        isValid = false;
+      } else if (Number(minPrice) >= Number(maxPrice)) {
+        newErrors.price = "Maximum price must be greater than minimum price";
+        isValid = false;
+      }
+    }
+
+    // Calories range validation
+    if ((!minCalories && maxCalories) || (minCalories && !maxCalories)) {
+      newErrors.calories = "Both minimum and maximum calories are required";
+      isValid = false;
+    } else if (minCalories && maxCalories) {
+      if (
+        !Number.isInteger(Number(minCalories)) ||
+        !Number.isInteger(Number(maxCalories))
+      ) {
+        newErrors.calories = "Calories must be integers";
+        isValid = false;
+      } else if (Number(minCalories) >= Number(maxCalories)) {
+        newErrors.calories =
+          "Maximum calories must be greater than minimum calories";
+        isValid = false;
+      }
+    }
+
+    // Cuisine validation
+    if (!cuisine || cuisine === "All Cuisines") {
+      newErrors.cuisine = "Please select a cuisine";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSearch = () => {
+    if (!validateForm()) {
       return;
     }
 
@@ -149,146 +203,6 @@ export default function Index() {
     });
   };
 
-  const validateForm = () => {
-    let isValid = true;
-
-    // Reset all error messages
-    setLocationError("");
-    setRadiusError("");
-    setMinPriceError("");
-    setMaxPriceError("");
-    setPriceError("");
-    setMinCaloriesError("");
-    setMaxCaloriesError("");
-    setCaloriesError("");
-
-    // Validate location (required)
-    if (!location.trim()) {
-      setLocationError("Location is required");
-      isValid = false;
-    }
-
-    // Validate radius (required and must be integer)
-    if (!radius.trim()) {
-      setRadiusError("Search radius is required");
-      isValid = false;
-    } else if (!Number.isInteger(Number(radius)) || Number(radius) <= 0) {
-      setRadiusError("Radius must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate price range (required and must be integers)
-    if (!minPrice.trim()) {
-      setMinPriceError("Minimum price is required");
-      isValid = false;
-    } else if (!Number.isInteger(Number(minPrice)) || Number(minPrice) < 0) {
-      setMinPriceError("Must be a non-negative integer");
-      isValid = false;
-    }
-
-    if (!maxPrice.trim()) {
-      setMaxPriceError("Maximum price is required");
-      isValid = false;
-    } else if (!Number.isInteger(Number(maxPrice)) || Number(maxPrice) <= 0) {
-      setMaxPriceError("Must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate min price is less than max price
-    if (minPrice && maxPrice && Number(minPrice) >= Number(maxPrice)) {
-      setPriceError("Maximum price must be greater than minimum price");
-      isValid = false;
-    }
-
-    // Validate calories range (required and must be integers)
-    if (!minCalories.trim()) {
-      setMinCaloriesError("Minimum calories is required");
-      isValid = false;
-    } else if (
-      !Number.isInteger(Number(minCalories)) ||
-      Number(minCalories) < 0
-    ) {
-      setMinCaloriesError("Must be a non-negative integer");
-      isValid = false;
-    }
-
-    if (!maxCalories.trim()) {
-      setMaxCaloriesError("Maximum calories is required");
-      isValid = false;
-    } else if (
-      !Number.isInteger(Number(maxCalories)) ||
-      Number(maxCalories) <= 0
-    ) {
-      setMaxCaloriesError("Must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate min calories is less than max calories
-    if (
-      minCalories &&
-      maxCalories &&
-      Number(minCalories) >= Number(maxCalories)
-    ) {
-      setCaloriesError(
-        "Maximum calories must be greater than minimum calories"
-      );
-      isValid = false;
-    }
-
-    return isValid;
-  };
-
-  const handleSearchWithValidation = async () => {
-    // Run validation
-    if (!validateForm()) {
-      return;
-    }
-
-    // Set loading state while fetching data
-    setIsLoading(true);
-
-    try {
-      // Create search params
-      const searchParams = {
-        location,
-        radius: parseInt(radius),
-        minPrice: parseInt(minPrice),
-        maxPrice: parseInt(maxPrice),
-        minCalories: parseInt(minCalories),
-        maxCalories: parseInt(maxCalories),
-        cuisine: cuisine !== "All Cuisines" ? cuisine : undefined,
-      };
-
-      // Call your API endpoint with the search parameters
-      const response = await fetch("YOUR_API_ENDPOINT_URL", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(searchParams),
-      });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      const data = await response.json();
-
-      // Navigate to results page with the fetched data
-      router.push({
-        pathname: "/consumer/takeout/results",
-        params: {
-          resultsData: JSON.stringify(data),
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching search results:", error);
-      alert("Failed to fetch results. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -301,17 +215,11 @@ export default function Index() {
               <Text style={styles.inputLabel}>Location</Text>
               <View style={styles.locationInputContainer}>
                 <TextInput
-                  style={[
-                    styles.locationInput,
-                    locationError ? styles.inputError : null,
-                  ]}
+                  style={styles.locationInput}
                   placeholder="Enter your location"
                   placeholderTextColor="#999"
                   value={location}
-                  onChangeText={(text) => {
-                    setLocation(text);
-                    setLocationError("");
-                  }}
+                  onChangeText={setLocation}
                   onFocus={() =>
                     location.length > 2 && setShowSuggestions(true)
                   }
@@ -328,9 +236,6 @@ export default function Index() {
                   )}
                 </TouchableOpacity>
               </View>
-              {locationError ? (
-                <Text style={styles.errorText}>{locationError}</Text>
-              ) : null}
 
               {showSuggestions && (
                 <View style={styles.suggestionsContainer}>
@@ -349,30 +254,30 @@ export default function Index() {
                   />
                 </View>
               )}
+
+              {errors.location && (
+                <Text style={styles.errorText}>{errors.location}</Text>
+              )}
             </View>
 
             {/* Radius Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Search Radius (miles)</Text>
               <TextInput
-                style={[
-                  styles.textInput,
-                  radiusError ? styles.inputError : null,
-                ]}
+                style={styles.textInput}
                 placeholder="5"
                 placeholderTextColor="#999"
                 value={radius}
                 onChangeText={(text) => {
-                  if (text === "" || /^\d+$/.test(text)) {
-                    setRadius(text);
-                    setRadiusError("");
-                  }
+                  setRadius(text);
+                  setErrors({ ...errors, radius: "" });
                 }}
                 keyboardType="numeric"
               />
-              {radiusError ? (
-                <Text style={styles.errorText}>{radiusError}</Text>
-              ) : null}
+
+              {errors.radius && (
+                <Text style={styles.errorText}>{errors.radius}</Text>
+              )}
             </View>
 
             {/* Price Range */}
@@ -382,7 +287,7 @@ export default function Index() {
                 <TextInput
                   style={[
                     styles.priceInput,
-                    minPriceError ? styles.inputError : null,
+                    errors.price ? styles.inputError : null,
                   ]}
                   placeholder="Min"
                   placeholderTextColor="#999"
@@ -390,8 +295,7 @@ export default function Index() {
                   onChangeText={(text) => {
                     if (text === "" || /^\d+$/.test(text)) {
                       setMinPrice(text);
-                      setMinPriceError("");
-                      setPriceError("");
+                      setErrors({ ...errors, price: "" });
                     }
                   }}
                   keyboardType="numeric"
@@ -400,7 +304,7 @@ export default function Index() {
                 <TextInput
                   style={[
                     styles.priceInput,
-                    maxPriceError ? styles.inputError : null,
+                    errors.price ? styles.inputError : null,
                   ]}
                   placeholder="Max"
                   placeholderTextColor="#999"
@@ -408,20 +312,15 @@ export default function Index() {
                   onChangeText={(text) => {
                     if (text === "" || /^\d+$/.test(text)) {
                       setMaxPrice(text);
-                      setMaxPriceError("");
-                      setPriceError("");
+                      setErrors({ ...errors, price: "" });
                     }
                   }}
                   keyboardType="numeric"
                 />
               </View>
-              {minPriceError ? (
-                <Text style={styles.errorText}>{minPriceError}</Text>
-              ) : maxPriceError ? (
-                <Text style={styles.errorText}>{maxPriceError}</Text>
-              ) : priceError ? (
-                <Text style={styles.errorText}>{priceError}</Text>
-              ) : null}
+              {errors.price && (
+                <Text style={styles.errorText}>{errors.price}</Text>
+              )}
             </View>
 
             {/* Calories Range */}
@@ -431,7 +330,7 @@ export default function Index() {
                 <TextInput
                   style={[
                     styles.priceInput,
-                    minCaloriesError ? styles.inputError : null,
+                    errors.calories ? styles.inputError : null,
                   ]}
                   placeholder="Min"
                   placeholderTextColor="#999"
@@ -439,8 +338,7 @@ export default function Index() {
                   onChangeText={(text) => {
                     if (text === "" || /^\d+$/.test(text)) {
                       setMinCalories(text);
-                      setMinCaloriesError("");
-                      setCaloriesError("");
+                      setErrors({ ...errors, calories: "" });
                     }
                   }}
                   keyboardType="numeric"
@@ -449,7 +347,7 @@ export default function Index() {
                 <TextInput
                   style={[
                     styles.priceInput,
-                    maxCaloriesError ? styles.inputError : null,
+                    errors.calories ? styles.inputError : null,
                   ]}
                   placeholder="Max"
                   placeholderTextColor="#999"
@@ -457,29 +355,32 @@ export default function Index() {
                   onChangeText={(text) => {
                     if (text === "" || /^\d+$/.test(text)) {
                       setMaxCalories(text);
-                      setMaxCaloriesError("");
-                      setCaloriesError("");
+                      setErrors({ ...errors, calories: "" });
                     }
                   }}
                   keyboardType="numeric"
                 />
               </View>
-              {minCaloriesError ? (
-                <Text style={styles.errorText}>{minCaloriesError}</Text>
-              ) : maxCaloriesError ? (
-                <Text style={styles.errorText}>{maxCaloriesError}</Text>
-              ) : caloriesError ? (
-                <Text style={styles.errorText}>{caloriesError}</Text>
-              ) : null}
+              {errors.calories && (
+                <Text style={styles.errorText}>{errors.calories}</Text>
+              )}
             </View>
 
             {/* Cuisine Selection */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Cuisine</Text>
-              <View style={styles.pickerContainer}>
+              <View
+                style={[
+                  styles.pickerContainer,
+                  errors.cuisine ? styles.inputError : null,
+                ]}
+              >
                 <Picker
                   selectedValue={cuisine}
-                  onValueChange={(itemValue) => setCuisine(itemValue)}
+                  onValueChange={(itemValue) => {
+                    setCuisine(itemValue);
+                    setErrors({ ...errors, cuisine: "" });
+                  }}
                   style={styles.picker}
                   mode="dropdown"
                 >
@@ -488,21 +389,17 @@ export default function Index() {
                   ))}
                 </Picker>
               </View>
+              {errors.cuisine && (
+                <Text style={styles.errorText}>{errors.cuisine}</Text>
+              )}
             </View>
 
             {/* Search Button */}
             <TouchableOpacity
-              style={[styles.searchButton, isLoading && styles.disabledButton]}
-              onPress={handleSearchWithValidation}
-              disabled={isLoading}
+              style={styles.searchButton}
+              onPress={handleSearch}
             >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.searchButtonText}>
-                  Find Healthy Options
-                </Text>
-              )}
+              <Text style={styles.searchButtonText}>Find Healthy Options</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -652,9 +549,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
-  },
-  disabledButton: {
-    backgroundColor: "#A5D6A7",
-    opacity: 0.7,
   },
 });
