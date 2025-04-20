@@ -5,13 +5,19 @@ Users simply input their preferences such as location, cuisine, budget, and diet
 
 ## GIF Demo
 
-![eigenfood-demo-ezgif com-speed](https://github.com/user-attachments/assets/df597f76-2381-4eb8-a17b-8e9ab80a9a57)
-<p style="display: flex; align-items: center; justify-content: space-between;">
-  <img src="(https://github.com/user-attachments/assets/df597f76-2381-4eb8-a17b-8e9ab80a9a57)" alt="Landscape view" width="55%" />
-  <img src="(https://github.com/user-attachments/assets/e4ec3379-3a35-46ae-b4e6-6eec60523b15)"    alt="Mobile view"    width="45%" />
+<p style="display: flex; align-items: center; gap: 1rem;">
+  <img
+    src="https://github.com/user-attachments/assets/df597f76-2381-4eb8-a17b-8e9ab80a9a57"
+    alt="Landscape demo"
+    width="55%"
+  />
+  <img
+    src="https://github.com/user-attachments/assets/e4ec3379-3a35-46ae-b4e6-6eec60523b15"
+    alt="Mobile demo"
+    width="45%"
+  />
 </p>
 
-![iosdemo](https://github.com/user-attachments/assets/e4ec3379-3a35-46ae-b4e6-6eec60523b15)
 
 ## 💡 Why EigenFood?
 Millions of people in the U.S. live in food deserts—areas with limited access to affordable and nutritious food. EigenFood aims to bridge that gap with smart technology, helping users make informed, healthy food choices without added cost or effort.
