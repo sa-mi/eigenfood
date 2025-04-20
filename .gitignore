@@ -1,5 +1,7 @@
 .env.local
 
+__pycache__/
+
 HackDavis/
 __pycache__/
 .venv/
