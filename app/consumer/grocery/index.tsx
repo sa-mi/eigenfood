@@ -98,7 +98,7 @@ export default function Index() {
       // Reverse geocode to get address (in a real app)
       // For now, just display coordinates
       setLocation(
-        `Current Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
+        `(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
       );
     } catch (error) {
       console.error("Error getting location:", error);
