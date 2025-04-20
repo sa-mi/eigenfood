@@ -40,4 +40,4 @@ expo-env.d.tsbuildinfo
 
 ios/
 
-.expo*
+.expo/
