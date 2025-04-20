@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from google import genai
 from typing import List, Dict
 import re
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 # Load environment variables
@@ -22,6 +24,16 @@ if not GEMINI_KEY:
     raise RuntimeError("GEMINI_API_KEY not loaded. Check your .env file.")
 
 app = FastAPI()
+
+# 1) Configure CORS
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["http://localhost:8081"],   # or ["*"] if no credentials
+  allow_methods=["OPTIONS", "GET", "POST"],  # explicitly list OPTIONS
+  allow_headers=["*"],
+  allow_credentials=False,                   # or True + specific origins
+)
+
 
 
 

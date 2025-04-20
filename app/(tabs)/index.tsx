@@ -5,15 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  Image,
+  Modal,
+  Platform,
   ScrollView,
   Dimensions,
-  ImageBackground,
-  TextInput,
-  Platform,
-  Modal,
-  FlatList,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -21,18 +16,8 @@ import Slider from "@react-native-community/slider";
 import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
 import RestaurantList from "../../components/RestaurantList";
-import GroceryList from "../../components/GroceryList";
 
 const { width, height } = Dimensions.get("screen");
-
-// Mock data for address suggestions
-const mockAddresses = [
-  "123 Main St, San Francisco, CA",
-  "456 Market St, San Francisco, CA",
-  "789 Mission St, San Francisco, CA",
-  "101 Broadway, New York, NY",
-  "202 Central Park West, New York, NY",
-];
 
 // Cuisine options
 const cuisineOptions = [
@@ -47,12 +32,12 @@ const cuisineOptions = [
   "Thai",
   "Vegetarian",
   "Vegan",
-  "Organic",
 ];
 
 export default function Index() {
   const router = useRouter();
-  const [viewType, setViewType] = useState("restaurants"); // "restaurants" or "groceries"
+  
+  // State variables
   const [location, setLocation] = useState("");
   const [maxCalories, setMaxCalories] = useState(1000);
   const [modalVisible, setModalVisible] = useState(false);
@@ -60,47 +45,10 @@ export default function Index() {
   const [radius, setRadius] = useState(5); // Miles
   const [priceRange, setPriceRange] = useState([0, 100]); // Min and max price
 
-  const toggleViewType = (type) => {
-    setViewType(type);
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              viewType === "restaurants" ? styles.toggleActive : {},
-            ]}
-            onPress={() => toggleViewType("restaurants")}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                viewType === "restaurants" ? styles.toggleTextActive : {},
-              ]}
-            >
-              Restaurants
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleButton,
-              viewType === "groceries" ? styles.toggleActive : {},
-            ]}
-            onPress={() => toggleViewType("groceries")}
-          >
-            <Text
-              style={[
-                styles.toggleText,
-                viewType === "groceries" ? styles.toggleTextActive : {},
-              ]}
-            >
-              Groceries
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.headerTitle}>Healthy Restaurants</Text>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setModalVisible(true)}
@@ -110,37 +58,25 @@ export default function Index() {
       </View>
 
       <View style={styles.content}>
-        {viewType === "restaurants" ? (
-          <RestaurantList
-            location={location}
-            filters={{
-              radius,
-              cuisine,
-              priceRange,
-              calories: { min: 200, max: maxCalories },
-            }}
-          />
-        ) : (
-          <GroceryList
-            location={location}
-            filters={{
-              radius,
-              cuisine,
-              priceRange,
-              calories: { min: 200, max: maxCalories },
-            }}
-          />
-        )}
+        <RestaurantList
+          location={location}
+          filters={{
+            radius,
+            cuisine,
+            priceRange,
+            calories: { min: 0, max: maxCalories },
+          }}
+        />
       </View>
 
-      {/* Filters Modal */}
+      {/* Filter Modal */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter Options</Text>
@@ -190,7 +126,9 @@ export default function Index() {
               </View>
 
               {/* Price Range Slider */}
-              <Text style={styles.filterLabel}>Price Range</Text>
+              <Text style={styles.filterLabel}>
+                Price Range: ${priceRange[0]} - ${priceRange[1]}
+              </Text>
               <View style={styles.sliderContainer}>
                 <Slider
                   style={styles.slider}
@@ -198,20 +136,17 @@ export default function Index() {
                   maximumValue={100}
                   step={5}
                   value={priceRange[1]}
-                  onValueChange={(value) =>
-                    setPriceRange([0, value])
-                  }
+                  onValueChange={(value) => setPriceRange([0, value])}
                   minimumTrackTintColor="#4CAF50"
                   maximumTrackTintColor="#ddd"
                   thumbTintColor="#4CAF50"
                 />
-                <Text style={styles.sliderValue}>
-                  Up to ${priceRange[1]}
-                </Text>
               </View>
 
               {/* Calories Slider */}
-              <Text style={styles.filterLabel}>Max Calories</Text>
+              <Text style={styles.filterLabel}>
+                Maximum Calories: {maxCalories}
+              </Text>
               <View style={styles.sliderContainer}>
                 <Slider
                   style={styles.slider}
@@ -224,9 +159,9 @@ export default function Index() {
                   maximumTrackTintColor="#ddd"
                   thumbTintColor="#4CAF50"
                 />
-                <Text style={styles.sliderValue}>{maxCalories} calories</Text>
               </View>
 
+              {/* Apply Button */}
               <TouchableOpacity
                 style={styles.applyButton}
                 onPress={() => setModalVisible(false)}
@@ -250,45 +185,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    alignItems: "center",
+    paddingTop: 8,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    zIndex: 1,
+    borderBottomColor: "#f0f0f0",
   },
-  toggleContainer: {
-    flexDirection: "row",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#4CAF50",
-    overflow: "hidden",
-  },
-  toggleButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  toggleActive: {
-    backgroundColor: "#4CAF50",
-  },
-  toggleText: {
-    fontSize: 14,
-    color: "#4CAF50",
-  },
-  toggleTextActive: {
-    color: "#fff",
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#2E7D32",
   },
   filterButton: {
     padding: 8,
   },
   content: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
   },
-  modalOverlay: {
+  modalContainer: {
     flex: 1,
     justifyContent: "flex-end",
     backgroundColor: "rgba(0,0,0,0.5)",

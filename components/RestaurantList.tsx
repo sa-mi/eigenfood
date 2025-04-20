@@ -83,8 +83,7 @@ export default function RestaurantList({
     try {
       // Use inputLocation instead of debouncedLocation
       const payload = {
-        location:
-          inputLocation || "University Credit Union Center, Davis, CA",
+        location: inputLocation || "University Credit Union Center, Davis, CA",
         maxDistance: filters.radius,
         cuisine: filters.cuisine === "All Cuisines" ? "" : filters.cuisine,
         cals: filters.calories.max,
@@ -259,7 +258,9 @@ export default function RestaurantList({
         />
         <TouchableOpacity
           style={styles.locationButton}
-          onPress={() => {/* Location button functionality */}}
+          onPress={() => {
+            /* Location button functionality */
+          }}
         >
           <MaterialIcons name="my-location" size={20} color="#fff" />
         </TouchableOpacity>

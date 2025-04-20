@@ -153,29 +153,25 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
 
       // Prepare the request payload
       const payload = {
-        lat: coordinates.lat,
-        lng: coordinates.lng,
-        radius: filters.radius * 1609, // Convert miles to meters
-        max_price_level: Math.min(
-          Math.floor(filters.priceRange[1] / 25) + 1,
-          4
-        ), // Convert dollar range to 0-4 price level
-        cuisine:
-          filters.cuisine === "All Cuisines" ? "healthy" : filters.cuisine,
-        budget: filters.priceRange[1],
+        location: String(coordinates.lat) + "," + String(coordinates.lng),
+        max_price: Math.min(Math.floor(filters.priceRange[1] / 25) + 1, 4), // Convert dollar range to 0-4 price level
       };
 
       console.log("Sending grocery API request with payload:", payload);
-
+      const url = "http://localhost:8000/stores/" +
+      decodeURIComponent(payload.location) +
+          "/" +
+          payload.max_price +
+          "/"
+        console.log(url)
       // Make the API request
-      const response = await fetch("http://localhost:8000/groceries", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // Convert the payload to URL params for GET request
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        "http://localhost:8000/stores/" +
+          payload.location +
+          "/" +
+          payload.max_price +
+          "/"
+      );
 
       if (!response.ok) {
         throw new Error(`API returned status code ${response.status}`);
