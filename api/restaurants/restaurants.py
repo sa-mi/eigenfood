@@ -78,21 +78,34 @@ def recs(req: RecRequest) -> List[RecResult]:
 
     results: List[RecResult] = []
     # Limit to first 3 restaurants
-    for place in places[:3]:
-        name = place.get("name")
+    name = [place.get("name") for place in places[:3]]
         # Get three healthy options
-        orders = get_healthy_orders(name, req.cals, req.budget)
-        results.append(RecResult(name=name, calories=orders[0], price=orders[1], dish=orders[2]))
-        results.append(RecResult(name=name, calories=orders[3], price=orders[4], dish=orders[5]))
-        results.append(RecResult(name=name, calories=orders[6], price=orders[7], dish=orders[8]))
+    orders = get_healthy_orders(name, req.cals, req.budget)
+    
+    return [RecResult(dish=order[0], price=order[1][1:], calories=order[2], name=order[3]) for order in orders]
+    
 
-    return results
-
-def get_healthy_orders(restaurant: str, cals: int, budget: float) -> List[str]:
+def get_healthy_orders(restaurants: str, cals: int, budget: float) -> List[str]:
     """Use Gemini to suggest three healthy menu items or substitutions."""
     prompt = (
-        f"For the restaurant {restaurant}, suggest three healthy menu items or substitutions "
-        f"under {cals} calories and ${budget} budget. Strictly give the output in the format 'calories1, price1, dish1, calories2, price2, dish2, ...'. Only include commas in the output. No extra text."
+        f"""You are a nutrition‐focused assistant.
+
+Restaurants:
+{restaurants}
+
+Constraints:
+- Maximum calories per dish: {cals}
+- Maximum price per dish: ${budget}
+
+For **each** restaurant in the list, suggest **exactly three** healthy menu items or substitutions that satisfy those constraints.
+
+🔔 **Output** **only** a single comma‑separated **string** (no JSON, no bullets, no markdown fences, no extra text) in this exact pattern:
+
+dish1, price1, calories1, restaurant1, dish2, price2, calories2, restaurant2, … , dish9, price9, calories9, restaurant9
+
+—so you end up with 36 comma‑separated values (4 fields × 9 items) in one flat string.
+
+"""
     )
     client = genai.Client(api_key=GEMINI_KEY)
     response = client.models.generate_content(
@@ -102,6 +115,12 @@ def get_healthy_orders(restaurant: str, cals: int, budget: float) -> List[str]:
     text = response.text.strip()
 
     suggestions = text.split(", ")
-    return suggestions
+
+
+    new_lst = []
+    for i in range(4, 40, 4):
+        new_lst.append(suggestions[i-4:i])
+
+    return new_lst
 
 
