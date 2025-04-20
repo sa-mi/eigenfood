@@ -174,7 +174,7 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
           "Content-Type": "application/json",
         },
         // Convert the payload to URL params for GET request
-        body: null,
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
