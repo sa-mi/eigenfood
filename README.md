@@ -5,11 +5,7 @@ Users simply input their preferences such as location, cuisine, budget, and diet
 
 ## Video Demo
 
-
-[![Watch the demo](https://raw.githubusercontent.com/DanielLi030809/eigenfood/daniel/image.png)](https://raw.githubusercontent.com/DanielLi030809/eigenfood/daniel/eigenfood-demo.mp4)
-
-
-
+![eigenfood-demo-ezgif com-speed](https://github.com/user-attachments/assets/df597f76-2381-4eb8-a17b-8e9ab80a9a57)
 
 
 ## 💡 Why EigenFood?
