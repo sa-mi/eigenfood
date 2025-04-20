@@ -1,4 +1,4 @@
-.env
+.env.local
 
 HackDavis/
 __pycache__/

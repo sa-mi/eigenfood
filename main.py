@@ -22,8 +22,6 @@ app = FastAPI()
 
 class RecRequest(BaseModel):
     location: str
-    moneyBudget: str
-    calorieBudget: str
     maxDistance: float  # in miles
     cuisine: str
 
