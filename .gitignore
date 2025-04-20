@@ -1,13 +1,11 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+.env.local
 
-# dependencies
-node_modules/
+__pycache__/
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+HackDavis/
+__pycache__/
+.venv/
+.env.local
 
 # Native
 *.orig.*
