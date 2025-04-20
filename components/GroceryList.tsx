@@ -93,39 +93,50 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
     setIsLoadingLocation(true);
     setShowSuggestions(false);
     Keyboard.dismiss();
-    
+
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      
+
       if (status !== "granted") {
-        Alert.alert("Permission Denied", "Allow location access to find stores near you");
+        Alert.alert(
+          "Permission Denied",
+          "Allow location access to find stores near you"
+        );
         setIsLoadingLocation(false);
         return;
       }
-      
+
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      
+
       // Get address from coordinates using reverse geocoding
       const addresses = await Location.reverseGeocodeAsync({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       });
-      
+
       if (addresses && addresses.length > 0) {
         const address = addresses[0];
-        const formattedAddress = `${address.street || ''}, ${address.city || ''}, ${address.region || ''} ${address.postalCode || ''}`;
+        const formattedAddress = `${address.street || ""}, ${
+          address.city || ""
+        }, ${address.region || ""} ${address.postalCode || ""}`;
         setInputLocation(formattedAddress);
-        
+
         // Fetch grocery data with the new location
-        await fetchGroceryData(location.coords.latitude, location.coords.longitude);
+        await fetchGroceryData(
+          location.coords.latitude,
+          location.coords.longitude
+        );
       } else {
         throw new Error("Could not determine your address");
       }
     } catch (error) {
       console.error("Error getting current location:", error);
-      Alert.alert("Location Error", error.message || "Could not get your current location");
+      Alert.alert(
+        "Location Error",
+        error.message || "Could not get your current location"
+      );
     } finally {
       setIsLoadingLocation(false);
     }
@@ -137,22 +148,21 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
 
     try {
       // Get coordinates from location string or use provided coordinates
-      const coordinates = lat && lng 
-        ? { lat, lng } 
-        : getCoordinatesFromLocation(inputLocation);
-      
-      // Calculate max_price_level from price range (0-100 scale to 1-4 scale)
-      // If priceRange[1] is 25, max_price_level is 1; 50->2; 75->3; 100->4
-      const maxPriceLevel = Math.min(Math.ceil(filters.priceRange[1] / 25), 4);
-      
+      const coordinates =
+        lat && lng ? { lat, lng } : getCoordinatesFromLocation(inputLocation);
+
       // Prepare the request payload
       const payload = {
         lat: coordinates.lat,
         lng: coordinates.lng,
         radius: filters.radius * 1609, // Convert miles to meters
-        max_price_level: maxPriceLevel,
-        cuisine: filters.cuisine === "All Cuisines" ? "healthy" : filters.cuisine, 
-        budget: filters.priceRange[1]
+        max_price_level: Math.min(
+          Math.floor(filters.priceRange[1] / 25) + 1,
+          4
+        ), // Convert dollar range to 0-4 price level
+        cuisine:
+          filters.cuisine === "All Cuisines" ? "healthy" : filters.cuisine,
+        budget: filters.priceRange[1],
       };
 
       console.log("Sending grocery API request with payload:", payload);
@@ -163,38 +173,52 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        // For GET requests, we need to append the params to the URL
-        // In a real implementation, consider using a library like axios or a URL builder
+        // Convert the payload to URL params for GET request
+        body: null,
       });
 
       if (!response.ok) {
-        throw new Error(`API responded with status: ${response.status}`);
+        throw new Error(`API returned status code ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Grocery API response:", data);
-
-      // Set the store and parse recipes from the response
       setStore(data.store);
-      
-      // Try to parse the recipes string as JSON
+
+      // Parse recipes from the response
       try {
-        // The API returns recipes as a string, so we need to parse it
-        const parsedRecipes = JSON.parse(data.recipes);
-        setRecipes(Array.isArray(parsedRecipes) ? parsedRecipes : [parsedRecipes]);
-      } catch (parseError) {
-        console.error("Error parsing recipes:", parseError);
-        
-        // If it's not valid JSON, just use the string directly
-        setRecipes([{ 
-          name: "Recipes", 
-          description: "Recipes provided by the API are not in the expected format.", 
-          rawContent: data.recipes
-        }]);
+        // First try to parse as JSON
+        let parsedRecipes;
+        if (typeof data.recipes === "string") {
+          // Remove any markdown formatting that might be in the response
+          const cleanedString = data.recipes
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
+
+          parsedRecipes = JSON.parse(cleanedString);
+          setRecipes(
+            Array.isArray(parsedRecipes) ? parsedRecipes : [parsedRecipes]
+          );
+        } else {
+          // If it's already an object, use it directly
+          setRecipes(
+            Array.isArray(data.recipes) ? data.recipes : [data.recipes]
+          );
+        }
+      } catch (e) {
+        // If parsing fails, create a recipe object with raw content
+        console.log("Parsing recipes failed, using raw text");
+        setRecipes([
+          {
+            name: "Recipe Suggestions",
+            description: "Based on your search criteria",
+            rawContent: data.recipes,
+          },
+        ]);
       }
     } catch (err) {
       console.error("Error fetching grocery data:", err);
-      setError(err.message || "An error occurred while fetching grocery stores");
+      setError(`Failed to find grocery stores: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -215,18 +239,20 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
     return (
       <View style={styles.recipeItem}>
         <Text style={styles.recipeName}>{item.name}</Text>
-        
+
         {item.description && (
           <Text style={styles.recipeDescription}>{item.description}</Text>
         )}
-        
+
         {item.ingredients && (
           <>
             <Text style={styles.sectionTitle}>Ingredients</Text>
             <View style={styles.ingredientsContainer}>
               {Array.isArray(item.ingredients) ? (
                 item.ingredients.map((ingredient, idx) => (
-                  <Text key={idx} style={styles.ingredient}>• {ingredient}</Text>
+                  <Text key={idx} style={styles.ingredient}>
+                    • {ingredient}
+                  </Text>
                 ))
               ) : (
                 <Text style={styles.ingredient}>{item.ingredients}</Text>
@@ -234,7 +260,7 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
             </View>
           </>
         )}
-        
+
         {item.instructions && (
           <>
             <Text style={styles.sectionTitle}>Instructions</Text>
@@ -243,9 +269,11 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
             </View>
           </>
         )}
-        
+
         {item.totalCost && (
-          <Text style={styles.totalCost}>Estimated cost: ${item.totalCost}</Text>
+          <Text style={styles.totalCost}>
+            Estimated cost: ${item.totalCost}
+          </Text>
         )}
       </View>
     );
@@ -254,6 +282,82 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
   const handleStoreSelect = (store) => {
     // Navigate to store detail page
     router.push(`/consumer/grocery/store/${store.id}`);
+  };
+
+  // Create a merged data array for the FlatList to render both store and recipes
+  const createListData = () => {
+    if (!store) return [];
+
+    // Start with the store
+    const listData = [
+      {
+        type: "storeHeader",
+        data: { title: "Grocery Store" },
+      },
+      {
+        type: "store",
+        data: store,
+      },
+    ];
+
+    // Add recipes section if we have recipes
+    if (recipes.length > 0) {
+      listData.push({
+        type: "recipesHeader",
+        data: { title: "Recommended Recipes" },
+      });
+
+      // Add each recipe
+      recipes.forEach((recipe, index) => {
+        listData.push({
+          type: "recipe",
+          data: recipe,
+          index,
+        });
+      });
+    }
+
+    return listData;
+  };
+
+  // Render different item types based on type property
+  const renderListItem = ({ item }) => {
+    switch (item.type) {
+      case "storeHeader":
+        return <Text style={styles.sectionHeader}>{item.data.title}</Text>;
+
+      case "store":
+        return (
+          <TouchableOpacity
+            style={styles.storeInfoContainer}
+            onPress={() => handleStoreSelect(item.data)}
+          >
+            <Text style={styles.storeName}>{item.data.name}</Text>
+            <Text style={styles.storeAddress}>{item.data.address}</Text>
+            <Text style={styles.storePriceLevel}>
+              Price Level:{" "}
+              {Array(item.data.price_level || 0)
+                .fill("$")
+                .join("")}
+            </Text>
+            <MaterialIcons
+              name="chevron-right"
+              size={24}
+              color="#4CAF50"
+              style={styles.chevronIcon}
+            />
+          </TouchableOpacity>
+        );
+
+      case "recipesHeader":
+        return <Text style={styles.recipesHeader}>{item.data.title}</Text>;
+
+      case "recipe":
+        return renderRecipeItem({ item: item.data });
+
+      default:
+        return null;
+    }
   };
 
   return (
@@ -269,7 +373,11 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
             onFocus={() => inputLocation.length > 2 && setShowSuggestions(true)}
           />
           {isLoadingLocation ? (
-            <ActivityIndicator size="small" color="#4CAF50" style={styles.locationLoader} />
+            <ActivityIndicator
+              size="small"
+              color="#4CAF50"
+              style={styles.locationLoader}
+            />
           ) : (
             <TouchableOpacity
               style={styles.locationButton}
@@ -279,15 +387,15 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
               <MaterialIcons name="my-location" size={20} color="#fff" />
             </TouchableOpacity>
           )}
-          <TouchableOpacity 
-            style={styles.searchButton} 
+          <TouchableOpacity
+            style={styles.searchButton}
             onPress={handleSearch}
             disabled={isLoadingLocation || isLoading}
           >
             <MaterialIcons name="search" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
-        
+
         {/* Location suggestions dropdown */}
         {showSuggestions && (
           <View style={styles.suggestionsContainer}>
@@ -323,39 +431,20 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
           <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : store ? (
-        <View style={styles.contentContainer}>
-          <TouchableOpacity 
-            style={styles.storeInfoContainer} 
-            onPress={() => handleStoreSelect(store)}
-          >
-            <Text style={styles.storeName}>{store.name}</Text>
-            <Text style={styles.storeAddress}>{store.address}</Text>
-            <Text style={styles.storePriceLevel}>
-              Price Level: {Array(store.price_level).fill("$").join("")}
-            </Text>
-            <MaterialIcons 
-              name="chevron-right" 
-              size={24} 
-              color="#4CAF50" 
-              style={styles.chevronIcon} 
-            />
-          </TouchableOpacity>
-          
-          <Text style={styles.recipesHeader}>Recommended Recipes</Text>
-          
-          <FlatList
-            data={recipes}
-            keyExtractor={(item, index) => `recipe-${index}`}
-            renderItem={renderRecipeItem}
-            contentContainerStyle={styles.recipesList}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
+        <FlatList
+          data={createListData()}
+          keyExtractor={(item, index) => `${item.type}-${index}`}
+          renderItem={renderListItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+        />
       ) : (
         <View style={styles.emptyContainer}>
           <MaterialIcons name="store" size={48} color="#CCCCCC" />
           <Text style={styles.emptyText}>No grocery stores found</Text>
-          <Text style={styles.emptySubtext}>Try adjusting your filters or location</Text>
+          <Text style={styles.emptySubtext}>
+            Try adjusting your filters or location
+          </Text>
         </View>
       )}
     </View>
@@ -439,9 +528,14 @@ const styles = StyleSheet.create({
     color: "#2E7D32",
     margin: 16,
   },
-  contentContainer: {
-    flex: 1,
+  listContent: {
     padding: 16,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 12,
   },
   storeInfoContainer: {
     backgroundColor: "#fff",
