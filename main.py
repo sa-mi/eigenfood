@@ -1,3 +1,4 @@
+from decimal import FloatOperation
 import requests  # safe to use here since it's sync
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -21,8 +22,7 @@ app = FastAPI()
 
 
 class RecRequest(BaseModel):
-    lat: float
-    lng: float
+    location: str
     moneyBudget: str
     calorieBudget: str
     maxDistance: float  # in miles
@@ -39,11 +39,11 @@ class ItemLLM(BaseModel):
     cals: str
     budget: str
 
-def search_place(query: str, lat: float, lng: float, api_key: str):
+def search_place(query: str, lat, lng, api_key: str):
     base_url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
     params = {
         "query": query,
-        "location": f"{lat},{lng}",
+        "location": f"{float(lat)},{float(lng)}",
         "type": "restaurant",
         "maxprice": 1,
         "key": api_key,
@@ -82,9 +82,23 @@ async def get_llm_recs(req: ItemLLM):
 
 @app.post("/rest-recs", response_model=List)
 async def get_recs(req: RecRequest):
+    def contains_letters(text):
+        for char in text:
+            if char.isalpha():
+                return True
+        return False
+
+    if contains_letters(req.location):
+        lat, lng = address_to_latlon(req.location)
+    else:
+        print(tuple(req.location[1:-1].split(", ")))
+        lat, lng = tuple(req.location[1:-1].split(", "))
     cuisine = req.cuisine.strip() or "restaurants"
     query = f"{cuisine} restaurants"
-    data = search_place(query, req.lat, req.lng, GOOGLE_KEY)
+    print(f"{float(lat)},{float(lng)}")
+    data = search_place(query, float(lat), float(lng), GOOGLE_KEY)
+
+    print(data)
 
     if not data or "results" not in data:
         raise HTTPException(status_code=502, detail="Google API error or no results")
@@ -113,7 +127,7 @@ def address_to_latlon(address: str):
     if data["status"] != "OK":
         raise RuntimeError(data["status"])
     loc = data["results"][0]["geometry"]["location"]
-    return loc["lat"], loc["lng"]
+    return tuple([loc["lat"], loc["lng"]])
 
 # lat, lon = address_to_latlon("1600 Amphitheatre Pkwy, Mountain View, CA")
 # print(lat, lon)
