@@ -1,16 +1,23 @@
+from fastapi import FastAPI
 import generate_recipes as gr
 import get_stores as gs
 import os
 from dotenv import load_dotenv
+
+app = FastAPI()
+
 load_dotenv(".env.local")
 
-def get_stores(location, max_price):
+@app.get("/stores/{location}/{max_price}")
+async def get_stores(location: str, max_price: str):
     return gs.find_store("supermarket", location, max_price, os.getenv("GOOGLE_PLACES_API_KEY"))
 
-def get_dishes(cuisine, store_info, budget):
+@app.get("/dishes/{cuisine}/{store_info}/{budget}")
+async def get_dishes(cuisine: str, store_info: str, budget: str):
     return gr.generate_dishes(cuisine, store_info, budget, os.getenv("GEMINI_API_KEY"))
 
-def get_recipe(dish, store_info, budget):
+@app.get("/cuisine/{dish}/{store_info}/{budget}")
+async def get_recipe(dish: str, store_info: str, budget: str):
     return gr.generate_recipe(dish, store_info, budget, os.getenv("GEMINI_API_KEY"))
 
 if __name__ == "__main__":
