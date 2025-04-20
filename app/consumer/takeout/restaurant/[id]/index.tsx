@@ -255,7 +255,7 @@ export default function RestaurantDetailScreen() {
               {isSubmitting ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>Place Order</Text>
+                <Text style={styles.submitButtonText}>Find Healthy Options</Text>
               )}
             </TouchableOpacity>
           </View>

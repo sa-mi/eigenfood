@@ -11,20 +11,6 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 
-// Restaurant names only
-const restaurants = [
-  "Imm Thai Street Food",
-  "Little Plearn Thai Kitchen",
-  "The Noodle Thai Restaurant",
-  "Thai Basil",
-  "Racha Café",
-  "Champa Garden",
-  "Lao Thai Kitchen",
-  "Toss Noodle Bar",
-  "Chao Thai Cuisine",
-  "Bangkok Garden",
-];
-
 // Color palette for restaurant backgrounds
 const colors = [
   "#69D2E7",
@@ -42,6 +28,12 @@ const colors = [
 export default function ResultsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+
+  // Parse the JSON data that was passed from the search screen
+  const restaurants = params.resultsData
+    ? JSON.parse(params.resultsData as string)
+    : [];
+  console.log("Restaurants data:", restaurants);
 
   const handleRestaurantPress = (restaurant: any, index: any) => {
     console.log(`Selected restaurant: ${restaurant}`);
@@ -84,7 +76,9 @@ export default function ResultsScreen() {
             color="#2E7D32"
             style={styles.headerIcon}
           />
-          <Text style={styles.headerTitle}>Thai Restaurants Near You</Text>
+          <Text style={styles.headerTitle}>
+            {params.cuisine} Restaurants Near You
+          </Text>
         </View>
 
         <View style={styles.resultsInfoContainer}>
@@ -94,7 +88,7 @@ export default function ResultsScreen() {
           <View style={styles.filterDetails}>
             <Text style={styles.filterLabel}>We found</Text>
             <Text style={styles.filterValue}>
-              {params.cuisine ? params.cuisine : "Thai"} restaurants near you
+              {params.cuisine} restaurants near you
             </Text>
           </View>
         </View>

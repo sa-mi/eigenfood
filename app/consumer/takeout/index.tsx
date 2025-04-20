@@ -136,12 +136,12 @@ export default function Index() {
       // Create search params
       const searchParams = {
         location,
-        radius: parseInt(radius),
+        maxDistance: parseFloat(radius),
         cuisine,
       };
 
       // Call your API endpoint with the search parameters
-      const response = await fetch("http://localhost:3000/rest-recs", {
+      const response = await fetch("http://127.0.0.1:8000/rest-recs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -153,7 +153,22 @@ export default function Index() {
         throw new Error("Network response was not ok");
       }
 
+    //  const res = await fetch("http://127.0.0.1:8000/rest-recs", {
+    //    method: "POST",
+    //    headers: { "Content-Type": "application/json" },
+    //    body: JSON.stringify(searchParams),
+    //  });
+      
+    //  const payload = await res.json();
+    //  if (!res.ok) {
+    //    console.error("❌ Validation errors from server:", payload);
+    //    alert("Server rejected request: " + JSON.stringify(payload.detail || payload));
+    //    return;
+    //  }
+      
+
       const data = await response.json();
+      console.log(data);
 
       // Navigate to results page with the fetched data
       router.push({
