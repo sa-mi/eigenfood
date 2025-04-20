@@ -101,7 +101,7 @@ Constraints:
 
 For **each** restaurant in the list, suggest **exactly three** healthy menu items or substitutions that satisfy those constraints.
 
-🔔 **Output** **only** a single comma‑separated **string** (no JSON, no bullets, no markdown fences, no extra text) in this exact pattern:
+ **Output** **only** a single comma‑separated **string** (no JSON, no bullets, no markdown fences, no extra text) in this exact pattern:
 
 dish1, price1, calories1, restaurant1, dish2, price2, calories2, restaurant2, … , dish9, price9, calories9, restaurant9
 
@@ -184,13 +184,12 @@ def generate_recipes(cuisine: str, store_info: Dict, budget: float) -> str:
         "- Brief cooking instructions\n"
         "- Estimated total cost\n"
     )
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=800,
-        temperature=0.7,
+    client = genai.Client(api_key=GEMINI_KEY)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt
     )
-    return response.choices[0].text.strip()
+    return response.text.strip()
 
 # --- API Endpoint ---
 @app.get("/groceries", response_model=GroceriesResponse)
