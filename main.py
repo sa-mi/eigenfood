@@ -5,18 +5,17 @@ from pydantic import BaseModel
 from typing import List
 import os
 from dotenv import load_dotenv
-import openai
+from google import genai
 
 load_dotenv()
 GOOGLE_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
 print(GOOGLE_KEY)
 if not GOOGLE_KEY:
     raise RuntimeError("GOOGLE_PLACES_API_KEY not loaded. Check .env file.")
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
-print(OPENAI_KEY)
-if not OPENAI_KEY:
-    raise RuntimeError("OPENAI_KEY not loaded. Check .env file.")
-openai.api_key = OPENAI_KEY
+GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+print(GEMINI_KEY)
+if not GEMINI_KEY:
+    raise RuntimeError("GEMINI_KEY not loaded. Check .env file.")
 
 app = FastAPI()
 
@@ -62,13 +61,12 @@ async def get_llm_recs(req: ItemLLM):
         f"{req.cals if req.cals else "200-3000"} calories and ${req.budget if req.budget else "$5-$100"} budget for the restaurant: {req.restaurant}.\n Ensure the only thing listed is the healthy order or substitution with no unnecessary text.\n"
             )
 
-    client = openai.OpenAI()
+    client = genai.Client(api_key=GEMINI_KEY)
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4.1-nano",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
         )
         suggestions_text = response.choices[0].message.content
     except Exception as e:
