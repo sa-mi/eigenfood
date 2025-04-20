@@ -8,15 +8,18 @@ app = FastAPI()
 
 load_dotenv(".env.local")
 
-@app.get("/stores/{location}/{max_price}")
+# returns store infos of multiple stores given location and max_price (int from 1 -> 4)
+@app.get("/stores/{location}/{max_price}", response_model=dict)
 async def get_stores(location: str, max_price: str):
     return gs.find_store("supermarket", location, max_price, os.getenv("GOOGLE_PLACES_API_KEY"))
 
-@app.get("/dishes/{cuisine}/{store_info}/{budget}")
+# returns different dishes the specified store can create on budget
+@app.get("/dishes/{cuisine}/{store_info}/{budget}", reponse_model=list)
 async def get_dishes(cuisine: str, store_info: str, budget: str):
     return gr.generate_dishes(cuisine, store_info, budget, os.getenv("GEMINI_API_KEY"))
 
-@app.get("/cuisine/{dish}/{store_info}/{budget}")
+# returns recipe of dish using store info and budget (index 0 is the recipe)
+@app.get("/cuisine/{dish}/{store_info}/{budget}", response_model=list)
 async def get_recipe(dish: str, store_info: str, budget: str):
     return gr.generate_recipe(dish, store_info, budget, os.getenv("GEMINI_API_KEY"))
 
