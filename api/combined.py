@@ -24,8 +24,6 @@ if not GEMINI_KEY:
     raise RuntimeError("GEMINI_API_KEY not loaded. Check your .env file.")
 
 app = FastAPI()
-
-# 1) Configure CORS
 app.add_middleware(
   CORSMiddleware,
   allow_origins=["http://localhost:8081"],   # or ["*"] if no credentials
@@ -33,7 +31,6 @@ app.add_middleware(
   allow_headers=["*"],
   allow_credentials=False,                   # or True + specific origins
 )
-
 
 
 
@@ -71,7 +68,7 @@ async def get_stores(location: str, max_price: str):
     return gs.find_store("supermarket", location, max_price, os.getenv("GOOGLE_PLACES_API_KEY"))
 
 # returns different dishes the specified store can create on budget
-@app.get("/dishes/{cuisine}/{store_info}/{budget}", reponse_model=list)
+@app.get("/dishes/{cuisine}/{store_info}/{budget}", response_model=list)
 async def get_dishes(cuisine: str, store_info: str, budget: str):
     return gr.generate_dishes(cuisine, store_info, budget, os.getenv("GEMINI_API_KEY"))
 
@@ -185,5 +182,3 @@ def recs(req: RecRequest) -> List[RecResult]:
         results.append(RecResult(name=name, dish=dish, calories=calories, price=price))
 
     return results
-
-
