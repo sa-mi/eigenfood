@@ -6,3 +6,5 @@ HackDavis/
 __pycache__/
 .venv/
 .env.local
+
+argon-react-native-master/
