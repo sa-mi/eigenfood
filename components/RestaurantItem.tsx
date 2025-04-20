@@ -103,12 +103,7 @@ export default function RestaurantItem({ restaurant }: RestaurantItemProps) {
             </View>
           ))}
 
-          <TouchableOpacity
-            style={styles.viewMenuButton}
-            onPress={navigateToRestaurant}
-          >
-            <Text style={styles.viewMenuButtonText}>View Full Menu</Text>
-          </TouchableOpacity>
+          
         </View>
       )}
     </View>
