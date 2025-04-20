@@ -35,4 +35,6 @@ yarn-error.*
 
 app-example
 
+__pycache__/
+
 argon-react-native-master/
