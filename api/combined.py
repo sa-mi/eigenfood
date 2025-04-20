@@ -3,6 +3,8 @@ import requests
 import json
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
+import grocery.generate_recipes as gr
+import grocery.get_stores as gs
 from typing import List
 from dotenv import load_dotenv
 from google import genai
@@ -50,88 +52,21 @@ def search_place(query: str, lat: float, lng: float, radius: int, api_key: str) 
     return resp.json().get("results", [])
 
 
-# Groceries
 
-class StoreInfo(BaseModel):
-    name: str
-    address: str
-    price_level: int
+# returns store infos of multiple stores given location and max_price (int from 1 -> 4)
+@app.get("/stores/{location}/{max_price}", response_model=dict)
+async def get_stores(location: str, max_price: str):
+    return gs.find_store("supermarket", location, max_price, os.getenv("GOOGLE_PLACES_API_KEY"))
 
-class GroceriesResponse(BaseModel):
-    store: StoreInfo
-    recipes: str    # Raw GPT output; parse if desired
+# returns different dishes the specified store can create on budget
+@app.get("/dishes/{cuisine}/{store_info}/{budget}", reponse_model=list)
+async def get_dishes(cuisine: str, store_info: str, budget: str):
+    return gr.generate_dishes(cuisine, store_info, budget, os.getenv("GEMINI_API_KEY"))
 
-# --- Core Functions ---
-def find_cheapest_grocery(lat: float, lng: float, radius: int, max_price_level: int) -> Dict:
-    """
-    Uses Google Places Nearby Search to find the cheapest grocery/supermarket in the given radius.
-    """
-    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-    params = {
-        "key": os.getenv("GOOGLE_API_KEY"),
-        "location": f"{lat},{lng}",
-        "radius": radius,
-        "type": "grocery_or_supermarket",
-        "maxprice": max_price_level,
-    }
-    resp = requests.get(url, params=params)
-    resp.raise_for_status()
-    places = resp.json().get("results", [])
-
-    def price_level(place):
-        return place.get("price_level", max_price_level + 1)
-
-    sorted_places = sorted(places, key=price_level)
-    if not sorted_places:
-        raise RuntimeError("No grocery stores found within given parameters.")
-
-    cheapest = sorted_places[0]
-    return {
-        "name": cheapest.get("name"),
-        "address": cheapest.get("vicinity"),
-        "price_level": cheapest.get("price_level", 0),
-    }
-
-
-def generate_recipes(cuisine: str, store_info: Dict, budget: float) -> str:
-    """
-    Queries OpenAI GPT to generate 5 recipes of the given cuisine
-    using approximate ingredient costs within the specified budget.
-    """
-    prompt = (
-        f"You are a helpful chef assistant.\n"
-        f"Given the grocery store '{store_info['name']}' at '{store_info['address']}', "
-        f"generate 5 {cuisine} recipes that can be made within a budget of ${budget}. "
-        "For each recipe, provide in json:\n"
-        "- Recipe name\n"
-        "- List of ingredients with approximate quantity and cost\n"
-        "- Brief cooking instructions\n"
-        "- Estimated total cost\n"
-    )
-    client = genai.Client(api_key=GEMINI_KEY)
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt
-    )
-    return response.text.strip()
-
-# --- API Endpoint ---
-@app.get("/groceries", response_model=GroceriesResponse)
-async def get_groceries(
-    lat: float = Query(..., description="Latitude of search center"),
-    lng: float = Query(..., description="Longitude of search center"),
-    radius: int = Query(..., description="Search radius in meters"),
-    max_price: int = Query(1, description="Max price level (0-4)"),
-    cuisine: str = Query(..., description="Cuisine type for recipes"),
-    budget: float = Query(..., description="Budget for total recipe cost in USD"),
-):
-    try:
-        store = find_cheapest_grocery(lat, lng, radius, max_price)
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-    recipes = generate_recipes(cuisine, store, budget)
-    return {"store": store, "recipes": recipes}
+# returns recipe of dish using store info and budget (index 0 is the recipe)
+@app.get("/cuisine/{dish}/{store_info}/{budget}", response_model=list)
+async def get_recipe(dish: str, store_info: str, budget: str):
+    return gr.generate_recipe(dish, store_info, budget, os.getenv("GEMINI_API_KEY"))
 
 class RecRequest(BaseModel):
     location: str           # Address or "lat,lng"
@@ -238,3 +173,5 @@ def recs(req: RecRequest) -> List[RecResult]:
         results.append(RecResult(name=name, dish=dish, calories=calories, price=price))
 
     return results
+
+
