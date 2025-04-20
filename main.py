@@ -106,4 +106,22 @@ async def get_recs(req: RecRequest):
             break
 
     return recs
+import os, requests
+
+def address_to_latlon(address: str):
+    url = "https://maps.googleapis.com/maps/api/geocode/json"
+    params = {
+        "address": address,
+        "key": os.getenv("GOOGLE_API_KEY")
+    }
+    resp = requests.get(url, params=params)
+    resp.raise_for_status()
+    data = resp.json()
+    if data["status"] != "OK":
+        raise RuntimeError(data["status"])
+    loc = data["results"][0]["geometry"]["location"]
+    return loc["lat"], loc["lng"]
+
+lat, lon = address_to_latlon("1600 Amphitheatre Pkwy, Mountain View, CA")
+print(lat, lon)
 
