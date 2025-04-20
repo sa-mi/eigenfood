@@ -11,6 +11,23 @@ import {
   Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { Picker } from "@react-native-picker/picker";
+
+// Cuisine options
+const cuisineOptions = [
+  "All Cuisines",
+  "American",
+  "Chinese",
+  "Italian",
+  "Mexican",
+  "Japanese",
+  "Indian",
+  "Mediterranean",
+  "Thai",
+  "Vegetarian",
+  "Vegan",
+  "Organic",
+];
 
 export default function RestaurantDetailScreen() {
   const router = useRouter();
@@ -243,6 +260,22 @@ export default function RestaurantDetailScreen() {
               ) : null}
             </View>
 
+            {/* Cuisine Selection */}
+            <View style={styles.filterItem}>
+              <Text style={styles.filterLabel}>Cuisine Type</Text>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={cuisine}
+                  onValueChange={(itemValue) => setCuisine(itemValue)}
+                  style={styles.picker}
+                >
+                  {cuisineOptions.map((option) => (
+                    <Picker.Item key={option} label={option} value={option} />
+                  ))}
+                </Picker>
+              </View>
+            </View>
+
             {/* Submit Button */}
             <TouchableOpacity
               style={[
@@ -255,7 +288,9 @@ export default function RestaurantDetailScreen() {
               {isSubmitting ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>Find Healthy Options</Text>
+                <Text style={styles.submitButtonText}>
+                  Find Healthy Options
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -359,5 +394,31 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: "#A5D6A7",
     opacity: 0.7,
+  },
+  filterItem: {
+    marginBottom: 20,
+  },
+  filterLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2E7D32",
+    marginBottom: 8,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    backgroundColor: "#F8F8F8",
+    marginTop: 5,
+    overflow: Platform.OS === "android" ? "hidden" : "visible",
+  },
+  picker: {
+    width: "100%",
+    height: Platform.OS === "ios" ? 150 : 50,
+    color: "#333",
+  },
+  pickerItem: {
+    fontSize: 16,
+    height: 120,
   },
 });
