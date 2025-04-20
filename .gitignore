@@ -39,3 +39,5 @@ node_modules/
 expo-env.d.tsbuildinfo
 
 ios/
+
+.expo*
