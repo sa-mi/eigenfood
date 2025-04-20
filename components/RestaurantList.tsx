@@ -7,12 +7,16 @@ import {
   ActivityIndicator,
   TextInput,
   TouchableOpacity,
+  Alert,
+  Keyboard,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import RestaurantItem from "./RestaurantItem";
 
 interface RestaurantListProps {
   location: string;
+  setLocation: (location: string) => void;
   filters: {
     radius: number;
     cuisine: string;
@@ -23,6 +27,7 @@ interface RestaurantListProps {
 
 export default function RestaurantList({
   location,
+  setLocation,
   filters,
 }: RestaurantListProps) {
   const [restaurants, setRestaurants] = useState([]);
@@ -31,6 +36,7 @@ export default function RestaurantList({
   const initialLoadComplete = useRef(false);
   const prevFiltersRef = useRef(null);
   const [inputLocation, setInputLocation] = useState(location);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   // Load data once on initial component mount
   useEffect(() => {
@@ -72,10 +78,62 @@ export default function RestaurantList({
     };
   }, [filters]);
 
-  // New handler for search button
   const handleSearch = () => {
-    console.log("Search button pressed with location:", inputLocation);
-    fetchRestaurants();
+    if (inputLocation) {
+      setLocation(inputLocation);
+      fetchRestaurants();
+    }
+  };
+
+  const handleGetCurrentLocation = async () => {
+    setIsLoadingLocation(true);
+    Keyboard.dismiss();
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Allow location access to find restaurants near you"
+        );
+        setIsLoadingLocation(false);
+        return;
+      }
+
+      const locationData = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      // Get address from coordinates using reverse geocoding
+      const addresses = await Location.reverseGeocodeAsync({
+        latitude: locationData.coords.latitude,
+        longitude: locationData.coords.longitude,
+      });
+
+      if (addresses && addresses.length > 0) {
+        const address = addresses[0];
+        const formattedAddress = `${address.street || ""}, ${
+          address.city || ""
+        }, ${address.region || ""} ${address.postalCode || ""}`;
+
+        setInputLocation(formattedAddress);
+        setLocation(formattedAddress);
+
+        // Fetch restaurants with the new location
+        fetchRestaurants();
+      } else {
+        throw new Error("Could not determine your address");
+      }
+    } catch (error) {
+      console.error("Error getting current location:", error);
+      Alert.alert(
+        "Location Error",
+        error.message || "Could not get your current location"
+      );
+    } finally {
+      setIsLoadingLocation(false);
+    }
   };
 
   const fetchRestaurants = async () => {
@@ -256,15 +314,26 @@ export default function RestaurantList({
           value={inputLocation}
           onChangeText={setInputLocation}
         />
+        {isLoadingLocation ? (
+          <ActivityIndicator
+            size="small"
+            color="#4CAF50"
+            style={styles.locationLoader}
+          />
+        ) : (
+          <TouchableOpacity
+            style={styles.locationButton}
+            onPress={handleGetCurrentLocation}
+            disabled={isLoadingLocation}
+          >
+            <MaterialIcons name="my-location" size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
-          style={styles.locationButton}
-          onPress={() => {
-            /* Location button functionality */
-          }}
+          style={styles.searchButton}
+          onPress={handleSearch}
+          disabled={isLoadingLocation}
         >
-          <MaterialIcons name="my-location" size={20} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
           <MaterialIcons name="search" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -323,6 +392,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   locationButton: {
+    marginLeft: 8,
+    height: 40,
+    width: 40,
+    backgroundColor: "#4CAF50",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  locationLoader: {
     marginLeft: 8,
     height: 40,
     width: 40,

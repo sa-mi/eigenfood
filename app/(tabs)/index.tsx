@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Text,
   View,
@@ -14,7 +14,6 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 import { Picker } from "@react-native-picker/picker";
-import * as Location from "expo-location";
 import RestaurantList from "../../components/RestaurantList";
 
 const { width, height } = Dimensions.get("screen");
@@ -36,7 +35,7 @@ const cuisineOptions = [
 
 export default function Index() {
   const router = useRouter();
-  
+
   // State variables
   const [location, setLocation] = useState("");
   const [maxCalories, setMaxCalories] = useState(1000);
@@ -60,6 +59,7 @@ export default function Index() {
       <View style={styles.content}>
         <RestaurantList
           location={location}
+          setLocation={setLocation}
           filters={{
             radius,
             cuisine,
@@ -88,7 +88,7 @@ export default function Index() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView 
+            <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.modalScrollContent}
             >
@@ -111,7 +111,12 @@ export default function Index() {
 
               {/* Cuisine Picker */}
               <Text style={styles.filterLabel}>Cuisine</Text>
-              <View style={[styles.pickerContainer, Platform.OS === 'ios' ? styles.iosPicker : {}]}>
+              <View
+                style={[
+                  styles.pickerContainer,
+                  Platform.OS === "ios" ? styles.iosPicker : {},
+                ]}
+              >
                 <Picker
                   selectedValue={cuisine}
                   style={styles.picker}
@@ -145,12 +150,12 @@ export default function Index() {
 
               {/* Calories Slider */}
               <Text style={styles.filterLabel}>
-                Maximum Calories: {maxCalories}
+                Max Calories: {maxCalories}
               </Text>
               <View style={styles.sliderContainer}>
                 <Slider
                   style={styles.slider}
-                  minimumValue={500}
+                  minimumValue={100}
                   maximumValue={2000}
                   step={50}
                   value={maxCalories}
@@ -266,7 +271,7 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: "100%",
-    ...(Platform.OS === 'android' ? { height: 50 } : {}),
+    ...(Platform.OS === "android" ? { height: 50 } : {}),
   },
   pickerItem: {
     fontSize: 16,

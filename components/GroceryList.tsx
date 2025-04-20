@@ -39,6 +39,12 @@ const getCoordinatesFromLocation = (location: string) => {
   return { lat: 38.5382, lng: -121.7617 }; // UC Davis coordinates as default
 };
 
+interface ListItem {
+  type: string;
+  data: any;
+  index?: number; // Optional property
+}
+
 export default function GroceryList({ location, filters }: GroceryListProps) {
   const router = useRouter();
   const [store, setStore] = useState(null);
@@ -158,12 +164,13 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
       };
 
       console.log("Sending grocery API request with payload:", payload);
-      const url = "http://localhost:8000/stores/" +
-      decodeURIComponent(payload.location) +
-          "/" +
-          payload.max_price +
-          "/"
-        console.log(url)
+      const url =
+        "http://localhost:8000/stores/" +
+        decodeURIComponent(payload.location) +
+        "/" +
+        payload.max_price +
+        "/";
+      console.log(url);
       // Make the API request
       const response = await fetch(
         "http://localhost:8000/stores/" +
@@ -309,7 +316,7 @@ export default function GroceryList({ location, filters }: GroceryListProps) {
           type: "recipe",
           data: recipe,
           index,
-        });
+        } as ListItem);
       });
     }
 

@@ -49,6 +49,9 @@ export default function RestaurantDetailScreen() {
   const [maxCaloriesError, setMaxCaloriesError] = useState("");
   const [caloriesError, setCaloriesError] = useState("");
 
+  // Add cuisine state
+  const [cuisine, setCuisine] = useState("All Cuisines");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
