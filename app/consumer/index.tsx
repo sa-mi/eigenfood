@@ -42,7 +42,7 @@ export default function ConsumerOptions() {
               <View style={styles.headerContainer}>
                 <Text style={styles.optionText}>Grocery</Text>
                 <Image
-                  source={require("../../assets/images/diet1.png")}
+                  source={require("../../assets/images/diet.png")}
                   style={styles.headerImage}
                   resizeMode="contain"
                 />
@@ -56,7 +56,7 @@ export default function ConsumerOptions() {
               <View style={styles.headerContainer}>
                 <Text style={styles.optionText}>Takeout</Text>
                 <Image
-                  source={require("../../assets/images/diet1.png")}
+                  source={require("../../assets/images/diet.png")}
                   style={styles.headerImage}
                   resizeMode="contain"
                 />

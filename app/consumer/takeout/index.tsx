@@ -47,20 +47,10 @@ export default function Index() {
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [radius, setRadius] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [priceError, setPriceError] = useState("");
   const [cuisine, setCuisine] = useState("All Cuisines");
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [minCalories, setMinCalories] = useState("");
-  const [maxCalories, setMaxCalories] = useState("");
-  const [caloriesError, setCaloriesError] = useState("");
   const [locationError, setLocationError] = useState("");
   const [radiusError, setRadiusError] = useState("");
-  const [minPriceError, setMinPriceError] = useState("");
-  const [maxPriceError, setMaxPriceError] = useState("");
-  const [minCaloriesError, setMinCaloriesError] = useState("");
-  const [maxCaloriesError, setMaxCaloriesError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Filter address suggestions based on input
@@ -97,9 +87,7 @@ export default function Index() {
 
       // Reverse geocode to get address (in a real app)
       // For now, just display coordinates
-      setLocation(
-        `(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
-      );
+      setLocation(`(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
     } catch (error) {
       console.error("Error getting location:", error);
       alert(
@@ -110,57 +98,12 @@ export default function Index() {
     }
   };
 
-  const handleSearch = () => {
-    // Validate price range before searching
-    if (minPrice && maxPrice && Number(minPrice) >= Number(maxPrice)) {
-      setPriceError("Maximum price must be greater than minimum price");
-      return;
-    }
-
-    // Validate calories range before searching
-    if (
-      minCalories &&
-      maxCalories &&
-      Number(minCalories) >= Number(maxCalories)
-    ) {
-      setCaloriesError(
-        "Maximum calories must be greater than minimum calories"
-      );
-      return;
-    }
-
-    // Create search params
-    const searchParams = {
-      location,
-      radius: parseInt(radius),
-      minPrice: minPrice ? parseInt(minPrice) : undefined,
-      maxPrice: maxPrice ? parseInt(maxPrice) : undefined,
-      minCalories: minCalories ? parseInt(minCalories) : undefined,
-      maxCalories: maxCalories ? parseInt(maxCalories) : undefined,
-      cuisine,
-    };
-
-    console.log("Searching with params:", searchParams);
-
-    // Navigate to results page with params
-    router.push({
-      pathname: "/consumer",
-      params: searchParams,
-    });
-  };
-
   const validateForm = () => {
     let isValid = true;
 
-    // Reset all error messages
+    // Reset error messages
     setLocationError("");
     setRadiusError("");
-    setMinPriceError("");
-    setMaxPriceError("");
-    setPriceError("");
-    setMinCaloriesError("");
-    setMaxCaloriesError("");
-    setCaloriesError("");
 
     // Validate location (required)
     if (!location.trim()) {
@@ -174,64 +117,6 @@ export default function Index() {
       isValid = false;
     } else if (!Number.isInteger(Number(radius)) || Number(radius) <= 0) {
       setRadiusError("Radius must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate price range (required and must be integers)
-    if (!minPrice.trim()) {
-      setMinPriceError("Minimum price is required");
-      isValid = false;
-    } else if (!Number.isInteger(Number(minPrice)) || Number(minPrice) < 0) {
-      setMinPriceError("Must be a non-negative integer");
-      isValid = false;
-    }
-
-    if (!maxPrice.trim()) {
-      setMaxPriceError("Maximum price is required");
-      isValid = false;
-    } else if (!Number.isInteger(Number(maxPrice)) || Number(maxPrice) <= 0) {
-      setMaxPriceError("Must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate min price is less than max price
-    if (minPrice && maxPrice && Number(minPrice) >= Number(maxPrice)) {
-      setPriceError("Maximum price must be greater than minimum price");
-      isValid = false;
-    }
-
-    // Validate calories range (required and must be integers)
-    if (!minCalories.trim()) {
-      setMinCaloriesError("Minimum calories is required");
-      isValid = false;
-    } else if (
-      !Number.isInteger(Number(minCalories)) ||
-      Number(minCalories) < 0
-    ) {
-      setMinCaloriesError("Must be a non-negative integer");
-      isValid = false;
-    }
-
-    if (!maxCalories.trim()) {
-      setMaxCaloriesError("Maximum calories is required");
-      isValid = false;
-    } else if (
-      !Number.isInteger(Number(maxCalories)) ||
-      Number(maxCalories) <= 0
-    ) {
-      setMaxCaloriesError("Must be a positive integer");
-      isValid = false;
-    }
-
-    // Validate min calories is less than max calories
-    if (
-      minCalories &&
-      maxCalories &&
-      Number(minCalories) >= Number(maxCalories)
-    ) {
-      setCaloriesError(
-        "Maximum calories must be greater than minimum calories"
-      );
       isValid = false;
     }
 
@@ -252,15 +137,11 @@ export default function Index() {
       const searchParams = {
         location,
         radius: parseInt(radius),
-        minPrice: parseInt(minPrice),
-        maxPrice: parseInt(maxPrice),
-        minCalories: parseInt(minCalories),
-        maxCalories: parseInt(maxCalories),
-        cuisine: cuisine !== "All Cuisines" ? cuisine : undefined,
+        cuisine,
       };
 
       // Call your API endpoint with the search parameters
-      const response = await fetch("YOUR_API_ENDPOINT_URL", {
+      const response = await fetch("http://localhost:3000/rest-recs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -372,104 +253,6 @@ export default function Index() {
               />
               {radiusError ? (
                 <Text style={styles.errorText}>{radiusError}</Text>
-              ) : null}
-            </View>
-
-            {/* Price Range */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Price Range ($)</Text>
-              <View style={styles.priceContainer}>
-                <TextInput
-                  style={[
-                    styles.priceInput,
-                    minPriceError ? styles.inputError : null,
-                  ]}
-                  placeholder="Min"
-                  placeholderTextColor="#999"
-                  value={minPrice}
-                  onChangeText={(text) => {
-                    if (text === "" || /^\d+$/.test(text)) {
-                      setMinPrice(text);
-                      setMinPriceError("");
-                      setPriceError("");
-                    }
-                  }}
-                  keyboardType="numeric"
-                />
-                <Text style={styles.priceRangeSeparator}>-</Text>
-                <TextInput
-                  style={[
-                    styles.priceInput,
-                    maxPriceError ? styles.inputError : null,
-                  ]}
-                  placeholder="Max"
-                  placeholderTextColor="#999"
-                  value={maxPrice}
-                  onChangeText={(text) => {
-                    if (text === "" || /^\d+$/.test(text)) {
-                      setMaxPrice(text);
-                      setMaxPriceError("");
-                      setPriceError("");
-                    }
-                  }}
-                  keyboardType="numeric"
-                />
-              </View>
-              {minPriceError ? (
-                <Text style={styles.errorText}>{minPriceError}</Text>
-              ) : maxPriceError ? (
-                <Text style={styles.errorText}>{maxPriceError}</Text>
-              ) : priceError ? (
-                <Text style={styles.errorText}>{priceError}</Text>
-              ) : null}
-            </View>
-
-            {/* Calories Range */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Calories Range</Text>
-              <View style={styles.priceContainer}>
-                <TextInput
-                  style={[
-                    styles.priceInput,
-                    minCaloriesError ? styles.inputError : null,
-                  ]}
-                  placeholder="Min"
-                  placeholderTextColor="#999"
-                  value={minCalories}
-                  onChangeText={(text) => {
-                    if (text === "" || /^\d+$/.test(text)) {
-                      setMinCalories(text);
-                      setMinCaloriesError("");
-                      setCaloriesError("");
-                    }
-                  }}
-                  keyboardType="numeric"
-                />
-                <Text style={styles.priceRangeSeparator}>-</Text>
-                <TextInput
-                  style={[
-                    styles.priceInput,
-                    maxCaloriesError ? styles.inputError : null,
-                  ]}
-                  placeholder="Max"
-                  placeholderTextColor="#999"
-                  value={maxCalories}
-                  onChangeText={(text) => {
-                    if (text === "" || /^\d+$/.test(text)) {
-                      setMaxCalories(text);
-                      setMaxCaloriesError("");
-                      setCaloriesError("");
-                    }
-                  }}
-                  keyboardType="numeric"
-                />
-              </View>
-              {minCaloriesError ? (
-                <Text style={styles.errorText}>{minCaloriesError}</Text>
-              ) : maxCaloriesError ? (
-                <Text style={styles.errorText}>{maxCaloriesError}</Text>
-              ) : caloriesError ? (
-                <Text style={styles.errorText}>{caloriesError}</Text>
               ) : null}
             </View>
 
@@ -597,30 +380,9 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 14,
   },
-  priceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  priceInput: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
   inputError: {
     borderWidth: 1,
     borderColor: "red",
-  },
-  priceRangeSeparator: {
-    marginHorizontal: 10,
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    textAlignVertical: "center",
-    includeFontPadding: false,
-    textAlign: "center",
-    lineHeight: 24,
   },
   errorText: {
     color: "red",
