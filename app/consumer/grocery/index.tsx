@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
 import * as Location from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
+import { request, PERMISSIONS, RESULTS } from "react-native-permissions";
 
 // Mock data for address suggestions (replace with real API)
 const mockAddresses = [
@@ -85,6 +86,7 @@ export default function Index() {
     setIsLoadingLocation(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log("status", status);
 
       if (status !== "granted") {
         alert("Permission to access location was denied");
@@ -97,9 +99,7 @@ export default function Index() {
 
       // Reverse geocode to get address (in a real app)
       // For now, just display coordinates
-      setLocation(
-        `Current Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
-      );
+      setLocation(`(${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
     } catch (error) {
       console.error("Error getting location:", error);
       alert(
