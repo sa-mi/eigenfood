@@ -59,7 +59,7 @@ async def get_llm_recs(req: ItemLLM):
 
     prompt = (
         "Suggest a healthy order or substitution under "
-        f"{req.cals} calories and ${req.budget} budget for the restaurant: {req.restaurant}\n"
+        f"{req.cals} calories and ${req.budget} budget for the restaurant: {req.restaurant}.\n Ensure the only thing listed is the healthy order or substitution with no unnecessary text.\n"
             )
 
     client = openai.OpenAI()
