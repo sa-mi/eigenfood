@@ -7,13 +7,13 @@ def generate_dishes(cuisine, store_info, budget, api_key):
         f"Given the grocery store '{store_info['name']}' at '{store_info['address']}', "
         f"generate 5 {cuisine} recipes that can be made within a budget of ${budget}. "
         "Provide the recipe names in comma seperated list of strings.\n"
-        "Ensure the only thing listed are the recipes and commas with no unnecessary text, whitespace, or quotation marks.\n"
+        "Ensure the only thing listed are the recipes and commas with no unnecessary text, whitespace, or quotation marks like a comma seperated list in one line.\n"
     )
     response = client.models.generate_content(
         model="gemini-2.0-flash",
         contents=prompt
     )
-    return response.text.split(",")
+    return [i.replace('\n', '') for i in response.text.split(",")]
 
 def generate_recipe(dish, store_info, budget, api_key):
     client = genai.Client(api_key=api_key)
@@ -24,7 +24,7 @@ def generate_recipe(dish, store_info, budget, api_key):
         "Stay professional and minimize filler. No introduction.\n"
         "For this recipe, only provide:\n"
         "- Recipe name\n"
-        "- List of ingredients with approximate quantity and cost\n"
+        "- List of ingredients with approximate quantity and cost (Be as specific as possible given the information. Use brand names if possible)\n"
         "- Brief cooking instructions\n"
         "- Estimated total cost\n"
     )
