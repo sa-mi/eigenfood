@@ -9,7 +9,7 @@ Users simply input their preferences such as location, cuisine, budget, and diet
   <img
     src="https://github.com/user-attachments/assets/df597f76-2381-4eb8-a17b-8e9ab80a9a57"
     alt="Landscape demo"
-    width="75%"
+    width="95%"
   />
   <img
     src="https://github.com/user-attachments/assets/e4ec3379-3a35-46ae-b4e6-6eec60523b15"
