@@ -35,13 +35,9 @@ Results: The user receives a curated list of nearby restaurants, each with a hea
 ## 🧰 Tech Stack
 Frontend: React Native with Expo Go
 
-Backend: FastAPI
+Backend: FastAPI with Uvicorn
 
-APIs:
-
-Google Places API
-
-Google Gemini LLM (via prompt-based meal filtering)
+APIs: Google Places API, Google Gemini LLM (via prompt-based meal filtering), Google Maps API, Nutrionix API
 
 ## 🚀 Getting Started
 Clone the repo and install dependencies:
